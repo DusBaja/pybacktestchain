@@ -15,3 +15,9 @@ backtest = Backtest(
     name_blockchain='backtest',
     verbose=verbose
 )
+backtest.run_backtest()
+
+block_chain = load_blockchain('backtest')
+print(str(block_chain))
+# check if the blockchain is valid
+print(block_chain.is_valid())
