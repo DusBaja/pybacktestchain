@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO)
 #---------------------------------------------------------
 
 UNIVERSE_SEC = list(StockMapper().ticker_to_cik.keys())
-#UNIVERSE_SEC.extend(["^GSPC", "^STOXX50E"])
+UNIVERSE_SEC.extend(["^GSPC", "^STOXX50E"])
 
 #---------------------------------------------------------
 # Functions
