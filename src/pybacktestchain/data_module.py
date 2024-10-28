@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 import logging 
 from scipy.optimize import minimize
 import numpy as np
+import os
+from glob import glob
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -74,8 +76,98 @@ def get_stocks_data(tickers, start_date, end_date):
     data = pd.concat(dfs)
     return data
 
-# test 
-# get_stocks_data(['AAPL', 'MSFT'], '2000-01-01', '2020-12-31')
+# function that retrieves historical data on prices and ATM implied for a given index
+def get_atm_volatility(vol_surface_df, index_price):
+    """
+    Get the ATM volatility for a given index price by interpolating between the closest strikes.
+
+    Parameters:
+        vol_surface_df (pd.DataFrame): The volatility surface dataframe with strikes as columns.
+        index_price (float): The current index price to approximate the ATM volatility.
+
+    Returns:
+        atm_volatility (float): Interpolated linearly ATM volatility .
+    """
+    vol_surface_df.index = pd.to_numeric(vol_surface_df.index, errors='coerce')
+    days_to_expiry = pd.Series(vol_surface_df.index, index=vol_surface_df.index).astype(float)
+    
+    # Find the expiry row closest to the 1M expiry (20 days)
+    closest_expiry_idx = (days_to_expiry - 21).abs().idxmin()
+    closest_expiry_row = vol_surface_df.loc[closest_expiry_idx]
+
+    strikes = vol_surface_df.columns[1:].astype(float)  # The first column is for the expiries
+    lower_strike = strikes[strikes <= index_price].max()
+    upper_strike = strikes[strikes >= index_price].min()
+    
+    if pd.isna(lower_strike) or pd.isna(upper_strike):
+        raise ValueError("Index price is outside the range of available strikes.")
+    
+    vol_lower = closest_expiry_row[lower_strike]
+    vol_upper = closest_expiry_row[upper_strike]
+    
+    if lower_strike == upper_strike:
+        atm_volatility = vol_lower
+    else:
+        atm_volatility = vol_lower + (index_price - lower_strike) / (upper_strike - lower_strike) * (vol_upper - vol_lower)
+    
+    return atm_volatility
+
+
+def get_index_data_atm(ticker, start_date, end_date):
+    """
+    Retrieves historical index data and appends ATM volatility data.
+
+    Parameters:
+        ticker (str): The ticker symbol for the index (e.g., '^GSPC' or '^STOXX50E').
+        start_date (str): Start date for the historical data.
+        end_date (str): End date for the historical data.
+
+    Returns:
+        pd.DataFrame: DataFrame with historical data and ATM volatility for each date.
+    """
+    if ticker == "^GSPC" or ticker == "^STOXX50E":
+        index = yf.Ticker(ticker)
+        data = index.history(start=start_date, end=end_date, auto_adjust=False, actions=False)
+        df = pd.DataFrame(data)
+        df['ticker'] = ticker
+        df.reset_index(inplace=True)
+        
+        folder_path = os.path.join(os.getcwd(), "Data_treated")
+        
+        for date in df['Date']:
+            date_str = date.strftime('%Y-%m-%d')
+            
+            file_pattern = os.path.join(folder_path, f"vol_surface_{'S&P 500' if ticker == '^GSPC' else 'Euro Stoxx 50'}_{date_str}_*.xlsx")
+            files = glob(file_pattern)
+            
+            if files:
+                
+                file_path = files[0]
+                vol_surface_df = pd.read_excel(file_path)
+                index_price = df.loc[df['Date'] == date, 'Close'].values[0]
+                atm_volatility = get_atm_volatility(vol_surface_df, index_price)
+                df.loc[df['Date'] == date, 'ATM vol for the close'] = atm_volatility
+
+            else:
+                
+                print(f"No volatility surface file found for date: {date_str}")
+                df.loc[df['Date'] == date, 'ATM vol for the close'] = None
+
+    else: 
+        raise ValueError("The index ticker you provided is not available in our database. Please choose '^GSPC' or '^STOXX50E'")
+
+    return df
+
+
+# Example usage
+# Retrieve data with interpolated ATM volatility for a given date range and ticker
+ticker = '^GSPC'  # Example ticker symbol
+start_date = '2024-10-01'
+end_date = '2024-10-20'
+result_df = get_index_data_atm(ticker, start_date, end_date)
+print(result_df)
+
+
 #---------------------------------------------------------
 # Classes 
 #---------------------------------------------------------
