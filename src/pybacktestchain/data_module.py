@@ -159,8 +159,7 @@ def get_index_data_atm(ticker, start_date, end_date):
     return df
 
 
-# Example usage
-# Retrieve data with interpolated ATM volatility for a given date range and ticker
+# I need to get the data constrain for this function !!!!!!!!!
 ticker = '^GSPC'  # Example ticker symbol
 start_date = '2024-10-01'
 end_date = '2024-10-20'
