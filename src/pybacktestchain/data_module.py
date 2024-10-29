@@ -163,11 +163,11 @@ def get_index_data_atm(ticker, start_date, end_date):
 
 
 # I need to get the data constrain for this function !!!!!!!!!
-ticker = '^GSPC'  # Example ticker symbol
-start_date = '2024-10-01'
-end_date = '2024-10-20'
-result_df = get_index_data_atm(ticker, start_date, end_date)
-print(result_df)
+#ticker = '^GSPC'  # Example ticker symbol
+#start_date = '2024-10-01'
+#end_date = '2024-10-20'
+#result_df = get_index_data_atm(ticker, start_date, end_date)
+#print(result_df)
 
 
 #---------------------------------------------------------
