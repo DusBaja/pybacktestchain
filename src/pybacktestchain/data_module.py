@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 import logging 
 from scipy.optimize import minimize
 import numpy as np
-import os
-from glob import glob
+import os ##added
+from glob import glob##added
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -107,7 +107,7 @@ def get_atm_volatility(vol_surface_df, index_price):
     
     if lower_strike == upper_strike:
         atm_volatility = vol_lower
-    else:
+    else: ## linear interpolation before putting something more sophisticated 
         atm_volatility = vol_lower + (index_price - lower_strike) / (upper_strike - lower_strike) * (vol_upper - vol_lower)
     
     return atm_volatility
@@ -119,12 +119,15 @@ def get_index_data_atm(ticker, start_date, end_date):
 
     Parameters:
         ticker (str): The ticker symbol for the index (e.g., '^GSPC' or '^STOXX50E').
-        start_date (str): Start date for the historical data.
-        end_date (str): End date for the historical data.
+        start_date (str): Start date for the historical data, after 2024-09-30
+        end_date (str): End date for the historical data, up to today
 
     Returns:
         pd.DataFrame: DataFrame with historical data and ATM volatility for each date.
     """
+    if datetime.strptime(start_date, '%Y-%m-%d') < datetime.strptime('2024-09-30', '%Y-%m-%d'):
+        raise ValueError("Our database for the implied volatility starts from 2024-09-30, your start date is before: we do not have the data")
+
     if ticker == "^GSPC" or ticker == "^STOXX50E":
         index = yf.Ticker(ticker)
         data = index.history(start=start_date, end=end_date, auto_adjust=False, actions=False)
