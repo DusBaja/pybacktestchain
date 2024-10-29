@@ -9,6 +9,7 @@ from scipy.optimize import minimize
 import numpy as np
 import os ##added
 from glob import glob##added
+from scipy.interpolate import interp1d ##added
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -77,43 +78,50 @@ def get_stocks_data(tickers, start_date, end_date):
     return data
 
 # function that retrieves historical data on prices and ATM implied for a given index
-def get_atm_volatility(vol_surface_df, index_price):
+def get_volatility(vol_surface_df, index_price, percentage_spot):
     """
-    Get the ATM volatility for a given index price by interpolating between the closest strikes.
+    Get the volatility for a given index price percentage by interpolating between the closest strikes.
 
     Parameters:
         vol_surface_df (pd.DataFrame): The volatility surface dataframe with strikes as columns.
-        index_price (float): The current index price to approximate the ATM volatility.
+        index_price (float): The current index price to approximate the volatility.
+        percentage_spot (float): Percentage of the index price to target for strike selection.
 
     Returns:
-        atm_volatility (float): Interpolated linearly ATM volatility .
+        volatility (float): Interpolated or extrapolated volatility at the specified strike using cubic interpolation.
+                            Returns NaN if the interpolated volatility is non-positive.
     """
     vol_surface_df.index = pd.to_numeric(vol_surface_df.index, errors='coerce')
     days_to_expiry = pd.Series(vol_surface_df.index, index=vol_surface_df.index).astype(float)
     
-    # Find the expiry row closest to the 1M expiry (20 days)
+    # The row closest to the 1M expiry (20 days)
     closest_expiry_idx = (days_to_expiry - 21).abs().idxmin()
     closest_expiry_row = vol_surface_df.loc[closest_expiry_idx]
 
-    strikes = vol_surface_df.columns[1:].astype(float)  # The first column is for the expiries
-    lower_strike = strikes[strikes <= index_price].max()
-    upper_strike = strikes[strikes >= index_price].min()
+    strikes = vol_surface_df.columns[1:].astype(float)  # Assuming the first column is expiry data
+    target_strike = index_price * percentage_spot
+
+    # Cubic interpolation with extrapolation allowed
+    try:
+        cubic_interpolator = interp1d(
+            strikes, 
+            closest_expiry_row.values[1:],  # Exclude the expiry column if it's the first one
+            kind='cubic', 
+            fill_value="extrapolate"
+        )
+        volatility = cubic_interpolator(target_strike)
+        
+        # Set to NaN if the volatility is non-positive as huge percentage spot can have some absurd output (negative vol for instance)
+        if volatility <= 0:
+            volatility = np.nan
+
+    except Exception as e:
+        raise ValueError(f"Interpolation or extrapolation failed: {e}")
     
-    if pd.isna(lower_strike) or pd.isna(upper_strike):
-        raise ValueError("Index price is outside the range of available strikes.")
-    
-    vol_lower = closest_expiry_row[lower_strike]
-    vol_upper = closest_expiry_row[upper_strike]
-    
-    if lower_strike == upper_strike:
-        atm_volatility = vol_lower
-    else: ## linear interpolation before putting something more sophisticated 
-        atm_volatility = vol_lower + (index_price - lower_strike) / (upper_strike - lower_strike) * (vol_upper - vol_lower)
-    
-    return atm_volatility
+    return volatility
 
 
-def get_index_data_atm(ticker, start_date, end_date):
+def get_index_data_vol(ticker, start_date, end_date, percentage_spot = 1):
     """
     Retrieves historical index data and appends ATM volatility data.
 
@@ -148,13 +156,13 @@ def get_index_data_atm(ticker, start_date, end_date):
                 file_path = files[0]
                 vol_surface_df = pd.read_excel(file_path)
                 index_price = df.loc[df['Date'] == date, 'Close'].values[0]
-                atm_volatility = get_atm_volatility(vol_surface_df, index_price)
-                df.loc[df['Date'] == date, 'ATM vol for the close'] = atm_volatility
+                volatility = get_volatility(vol_surface_df, index_price*percentage_spot,percentage_spot)
+                df.loc[df['Date'] == date, 'Percentage Spot selected vol for the close'] = volatility
 
             else:
                 
                 print(f"No volatility surface file found for date: {date_str}")
-                df.loc[df['Date'] == date, 'ATM vol for the close'] = None
+                df.loc[df['Date'] == date, 'Percentage Spot selected vol for the close'] = None
 
     else: 
         raise ValueError("The index ticker you provided is not available in our database. Please choose '^GSPC' or '^STOXX50E'")
@@ -162,11 +170,11 @@ def get_index_data_atm(ticker, start_date, end_date):
     return df
 
 
-# I need to get the data constrain for this function !!!!!!!!!
+
 #ticker = '^GSPC'  # Example ticker symbol
 #start_date = '2024-10-01'
 #end_date = '2024-10-20'
-#result_df = get_index_data_atm(ticker, start_date, end_date)
+#result_df = get_index_data_vol(ticker, start_date, end_date, 0.95)
 #print(result_df)
 
 
@@ -289,7 +297,55 @@ class FirstTwoMoments(Information):
         information_set['covariance_matrix'] = covariance_matrix
         information_set['companies'] = data.columns.to_numpy()
         return information_set
+class Momentum(Information):
+       #### The easiest one 
+    def compute_portfolio(self, t:datetime, information_set):
+        mu = information_set['expected_return']
+        if len(mu)% 2 == 0:
+            n = len(mu)
+        else: 
+            n = len(mu)-1
+        companies = information_set['companies']
+        # prepare dictionary 
+        portfolio = {company: 0 for company in companies}  # Default weight is 0
+        returns_dict = {company: mu[i] for i, company in enumerate(companies)}
+        sorted_returns = sorted(returns_dict.items(), key=lambda item: item[1], reverse=True)
+        top = sorted_returns[:n//2]
+        bottom = sorted_returns[n//2:]
+        
+        for company, _ in top:
+            portfolio[company] = 1/n
+        
+        for company, _ in bottom:
+            portfolio[company] = -1/n
+                
+        return portfolio
 
+    def compute_information(self, t : datetime):
+        
+        data = self.slice_data(t)
+        # the information set will be a dictionary with the data
+        information_set = {}
+
+        # sort data by ticker and date
+        data = data.sort_values(by=[self.company_column, self.time_column])
+
+        # expected return per company
+        data['return'] =  data.groupby(self.company_column)[self.adj_close_column].pct_change().mean()
+        information_set['expected_return'] = data.groupby(self.company_column)['return'].mean().to_numpy()
+
+        # 1. pivot the data
+        data = data.pivot(index=self.time_column, columns=self.company_column, values=self.adj_close_column)
+        # drop missing values
+        data = data.dropna(axis=0)
+        # 2. compute the covariance matrix
+        covariance_matrix = data.cov()
+        # convert to numpy matrix 
+        covariance_matrix = covariance_matrix.to_numpy()
+        # add to the information set
+        
+        information_set['companies'] = data.columns.to_numpy()
+        return information_set
 
         
 
