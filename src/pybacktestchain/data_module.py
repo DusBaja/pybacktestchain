@@ -10,6 +10,11 @@ import numpy as np
 import os ##added
 from glob import glob##added
 from scipy.interpolate import interp1d ##added
+import requests
+import subprocess
+import time
+import json
+import pandas as pd
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +29,50 @@ UNIVERSE_SEC.extend(["^GSPC", "^STOXX50E"])
 #---------------------------------------------------------
 # Functions
 #---------------------------------------------------------
+
+#To access our dynamic link for our vol surfac e (changing everytime because the free version):
+def start_ngrok():
+    """Start ngrok and retrieve the public URL dynamically from the code we run on our server."""
+    # Start ngrok process in the background
+    ngrok_process = subprocess.Popen(['ngrok', 'http', '5000'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    time.sleep(5)
+    
+    try:
+        url_response = requests.get('http://localhost:4040/api/tunnels')
+        url_data = url_response.json()
+        public_url = url_data['tunnels'][0]['public_url']
+        return public_url
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching ngrok URL: {e}")
+        return None
+
+def get_data_api(date, name, base_url):
+    """Fetch data from the Flask API based on date and index name and return as a DataFrame."""
+    if name == "^GSPC":
+        name = "S&P 500"
+    if name =="^STOXX50E":
+        name = "Euro Stoxx 50"
+    try:
+        response = requests.get(f"{base_url}/api/data", params={"date": date, "index": name})
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data:
+                df = pd.DataFrame(data)
+                return df
+            else:
+                print(f"No data available for {name} on {date}.")
+                return None
+        else:
+            print(f"Error: {response.status_code} - {response.text}")
+            return None
+    except Exception as e:
+        print(f"An error occurred while fetching data: {e}")
+        return None
+
+def get_volatility_from_api(date, index_name, base_url):
+    """ Fetch volatility surface data from the Flask API and return it as a DataFrame """
+    return get_data_api(date, index_name, base_url)
 
 # function that retrieves historical data on prices for a given stock
 def get_stock_data(ticker, start_date, end_date):
@@ -97,21 +146,20 @@ def get_volatility(vol_surface_df, index_price, percentage_spot):
     # The row closest to the 1M expiry (20 days)
     closest_expiry_idx = (days_to_expiry - 21).abs().idxmin()
     closest_expiry_row = vol_surface_df.loc[closest_expiry_idx]
-
-    strikes = vol_surface_df.columns[1:].astype(float)  # Assuming the first column is expiry data
+    strikes = vol_surface_df.columns[:-1].astype(float)  # The last column is expiry data
     target_strike = index_price * percentage_spot
 
     # Cubic interpolation with extrapolation allowed
     try:
         cubic_interpolator = interp1d(
             strikes, 
-            closest_expiry_row.values[1:],  # Exclude the expiry column if it's the first one
+            closest_expiry_row.values[:-1],  # Exclude the expiry column 
             kind='cubic', 
             fill_value="extrapolate"
         )
         volatility = cubic_interpolator(target_strike)
         
-        # Set to NaN if the volatility is non-positive as huge percentage spot can have some absurd output (negative vol for instance)
+        # Set to NaN if the volatility is non-positive 
         if volatility <= 0:
             volatility = np.nan
 
@@ -121,14 +169,15 @@ def get_volatility(vol_surface_df, index_price, percentage_spot):
     return volatility
 
 
-def get_index_data_vol(ticker, start_date, end_date, percentage_spot = 1):
+def get_index_data_vol(ticker, start_date, end_date, percentage_spot=1, base_url=None):
     """
-    Retrieves historical index data and appends ATM volatility data.
+    Retrieves historical index data and appends ATM volatility data from an API.
 
     Parameters:
         ticker (str): The ticker symbol for the index (e.g., '^GSPC' or '^STOXX50E').
         start_date (str): Start date for the historical data, after 2024-09-30
         end_date (str): End date for the historical data, up to today
+        base_url (str): The base URL of the Flask API (e.g., 'http://localhost:5000')
 
     Returns:
         pd.DataFrame: DataFrame with historical data and ATM volatility for each date.
@@ -143,25 +192,18 @@ def get_index_data_vol(ticker, start_date, end_date, percentage_spot = 1):
         df['ticker'] = ticker
         df.reset_index(inplace=True)
         
-        folder_path = os.path.join(os.getcwd(), "Data_treated")
-        
         for date in df['Date']:
             date_str = date.strftime('%Y-%m-%d')
             
-            file_pattern = os.path.join(folder_path, f"vol_surface_{'S&P 500' if ticker == '^GSPC' else 'Euro Stoxx 50'}_{date_str}_*.xlsx")
-            files = glob(file_pattern)
+            # Fetch volatility surface data from the API
+            vol_surface_df = get_volatility_from_api(date_str, "S&P 500" if ticker == "^GSPC" else "Euro Stoxx 50", base_url)
             
-            if files:
-                
-                file_path = files[0]
-                vol_surface_df = pd.read_excel(file_path)
+            if vol_surface_df is not None:
                 index_price = df.loc[df['Date'] == date, 'Close'].values[0]
-                volatility = get_volatility(vol_surface_df, index_price*percentage_spot,percentage_spot)
+                volatility = get_volatility(vol_surface_df, index_price * percentage_spot, percentage_spot)
                 df.loc[df['Date'] == date, 'Percentage Spot selected vol for the close'] = volatility
-
             else:
-                
-                print(f"No volatility surface file found for date: {date_str}")
+                print(f"No volatility surface data found for date: {date_str}")
                 df.loc[df['Date'] == date, 'Percentage Spot selected vol for the close'] = None
 
     else: 
@@ -171,11 +213,22 @@ def get_index_data_vol(ticker, start_date, end_date, percentage_spot = 1):
 
 
 
-#ticker = '^GSPC'  # Example ticker symbol
-#start_date = '2024-10-01'
-#end_date = '2024-10-20'
-#result_df = get_index_data_vol(ticker, start_date, end_date, 0.95)
-#print(result_df)
+#ngrok_url = start_ngrok()
+#if ngrok_url:
+#    print(f"ngrok is running at: {ngrok_url}")
+    
+    # Define ticker, date range, and base URL
+#    selected_ticker = "^GSPC"  # Choose ticker "^STOXX50E" for Euro Stoxx 50
+#    selected_start_date = "2024-10-01"
+#    selected_end_date = "2024-10-20"
+    
+    # Call the function with the API URL and data range
+#    result_df = get_index_data_vol(selected_ticker, selected_start_date, selected_end_date, 1, ngrok_url)
+    
+    # Display the result
+#    print(result_df)
+#else:
+#    print("Could not start ngrok or fetch the URL.")
 
 
 #---------------------------------------------------------
