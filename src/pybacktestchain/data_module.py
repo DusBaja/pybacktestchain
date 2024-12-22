@@ -10,6 +10,7 @@ import numpy as np
 import os ##added
 from glob import glob##added
 from scipy.interpolate import interp1d ##added
+from scipy.stats import norm##added
 import requests
 import subprocess
 import time
@@ -30,7 +31,18 @@ UNIVERSE_SEC.extend(["^GSPC", "^STOXX50E"])
 # Functions
 #---------------------------------------------------------
 
-#To access our dynamic link for our vol surfac e (changing everytime because the free version):
+#To access our dynamic link for our vol surface (changing everytime because the free version):
+def start_flask_app():
+    """
+    Start the Flask application by running app.py.
+    """
+    try:
+        flask_process = subprocess.Popen(['python', '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/test_flask/app.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        time.sleep(10) 
+        return flask_process
+    except Exception as e:
+        logging.error(f"Error starting Flask app: {e}")
+        return None
 def start_ngrok():
     """Start ngrok and retrieve the public URL dynamically from the code we run on our server."""
     # Start ngrok process in the background
@@ -205,30 +217,11 @@ def get_index_data_vol(ticker, start_date, end_date, percentage_spot=1, base_url
             else:
                 print(f"No volatility surface data found for date: {date_str}")
                 df.loc[df['Date'] == date, 'Percentage Spot selected vol for the close'] = None
-
+            print("Columns from the vol surface :", vol_surface_df)
     else: 
         raise ValueError("The index ticker you provided is not available in our database. Please choose '^GSPC' or '^STOXX50E'")
 
     return df
-
-
-
-#ngrok_url = start_ngrok()
-#if ngrok_url:
-#    print(f"ngrok is running at: {ngrok_url}")
-    
-    # Define ticker, date range, and base URL
-#    selected_ticker = "^GSPC"  # Choose ticker "^STOXX50E" for Euro Stoxx 50
-#    selected_start_date = "2024-10-01"
-#    selected_end_date = "2024-10-20"
-    
-    # Call the function with the API URL and data range
-#    result_df = get_index_data_vol(selected_ticker, selected_start_date, selected_end_date, 1, ngrok_url)
-    
-    # Display the result
-#    print(result_df)
-#else:
-#    print("Could not start ngrok or fetch the URL.")
 
 
 #---------------------------------------------------------
@@ -248,7 +241,11 @@ class Information:
     time_column: str = 'Date'
     company_column: str = 'ticker'
     adj_close_column: str = 'Close'
-
+    vol_column: str = 'ImpliedVol'
+    indices: list = None
+    option_type: str = 'call'
+    percentage_spot: float = 1.0
+    
     def slice_data(self, t : datetime):
         # Get the data module 
         data = self.data_module.data
@@ -273,7 +270,31 @@ class Information:
         
         # get the last price for each company
         prices = data.groupby(self.company_column)[self.adj_close_column].last()
-        # to dict, ticker as key price as value 
+        for index in ["^GSPC", "^STOXX50E"]:
+            if index in prices:
+                index_data = data[data[self.company_column] == index]
+                spot_price = index_data[self.adj_close_column].iloc[-1]
+                implied_vol = index_data[self.vol_column].iloc[-1] if self.vol_column in index_data else None
+                if implied_vol is not None:
+                    T = 21/365  # We assume 1 month exp
+                    r = 0.0315  
+                    sigma = implied_vol
+                    K = spot_price * self.percentage_spot  
+                    d1 = (np.log(spot_price / K) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
+                    d2 = d1 - sigma * np.sqrt(T)
+
+                    if self.option_type.lower() == 'call':
+                        # Call pice
+                        option_price = spot_price * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
+                    elif self.option_type.lower() == 'put':
+                        # Put 
+                        option_price = K * np.exp(-r * T) * norm.cdf(-d2) - spot_price * norm.cdf(-d1)
+                    else:
+                        raise ValueError("Invalid option type. Use 'call' or 'put'.")
+
+                    # Adjust price to reflect delta-hedged position
+                    delta = norm.cdf(d1) if self.option_type.lower() == 'call' else -norm.cdf(-d1)
+                    prices[index] = option_price  - delta * spot_price #we buy if delta negative, sell if delta is positive !  
         prices = prices.to_dict()
         return prices
 
