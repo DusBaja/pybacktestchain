@@ -3,7 +3,7 @@ import subprocess
 import time
 import json
 import pandas as pd
-
+from flask.app import * 
 def start_ngrok():
     """Start ngrok and retrieve the public URL dynamically."""
     ngrok_process = subprocess.Popen(['ngrok', 'http', '5000'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)

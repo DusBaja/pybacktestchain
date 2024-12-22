@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 
 
-data_folder = "/Users/dusicabajalica/Desktop/M2/Courses/Python/test_flask/Data_treated"
+data_folder = "/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/flask/Data_treated"
 
 @app.route('/')
 def index():
