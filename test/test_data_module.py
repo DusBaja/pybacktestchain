@@ -44,13 +44,35 @@ class TestDataModule(unittest.TestCase):
         information = Information(
             s=timedelta(days=10),
             data_module=self.data_module,
-            indices=["^GSPC", "^STOXX50E"]
+            indices=["^GSPC", "^STOXX50E"],
+            strategy_type = 'cash'
         )
         test_date = datetime.strptime(self.end_date, "%Y-%m-%d")
-        prices = information.get_prices(test_date)
+        prices = information.get_prices(test_date,"cash")
         self.assertIsInstance(prices, dict, "Prices should be a dictionary.")
         self.assertIn("^GSPC", prices, "Expected ^GSPC in the computed prices.")
         self.assertGreater(prices["^GSPC"], 0, "Price for ^GSPC should be greater than 0.")
+    def test_black_scholes_function(self):
+        """Test the Black-Scholes option pricing function."""
+        # Set up the parameters for the Black-Scholes test
+        spot_price = 4500  # Example spot price for S&P 500
+        strike_price = 4400  # Example strike price
+        T = 21 / 365  # 21 days until expiration (in years)
+        r = 0.0315  # Risk-free rate
+        sigma = 0.2  # Example implied volatility (20%)
+        option_type='call'
+        # Call the black_scholes function
+        option_price = Information.black_scholes(spot_price, strike_price, T, r, sigma, option_type)
+
+        # Assert that the result is a positive number (since option prices are generally positive)
+        self.assertGreater(option_price, 0, "Option price should be greater than 0.")
+        
+        # Test for a put option
+        option_type = 'put'
+        option_price_put = Information.black_scholes(spot_price, strike_price, T, r, sigma, option_type)
+        
+        # Assert that the result for put option is also a positive number
+        self.assertGreater(option_price_put, 0, "Put option price should be greater than 0.")
 
     def test_edge_case_empty_data(self):
         """Test behavior with an empty dataset."""
@@ -58,7 +80,7 @@ class TestDataModule(unittest.TestCase):
         empty_module = DataModule(data=empty_data)
         information = Information(data_module=empty_module, indices=["^GSPC"])
         test_date = datetime.strptime(self.end_date, "%Y-%m-%d")
-        prices = information.get_prices(test_date)
+        prices = information.get_prices(test_date,"cash")
         self.assertEqual(prices, {}, "Expected an empty dictionary when data is empty.")
 
     def test_multiple_tickers(self):

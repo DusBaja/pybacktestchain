@@ -333,7 +333,7 @@ class Backtest:
             # stop added 
                 if self.risk_model is not None:
                     portfolio = info.compute_portfolio(t, info.compute_information(t))
-                    prices = info.get_prices(t)
+                    prices = info.get_prices(t,self.strategy_type)
                     self.risk_model.trigger_stop_loss(t, portfolio, prices, self.broker)
             
                 if self.rebalance_flag().time_to_rebalance(t):
@@ -341,7 +341,7 @@ class Backtest:
                     logging.info(f"Rebalancing portfolio at {t}")
                     information_set = info.compute_information(t)
                     portfolio = info.compute_portfolio(t, information_set)
-                    prices = info.get_prices(t)
+                    prices = info.get_prices(t,self.strategy_type)
                     self.broker.execute_portfolio(portfolio, prices, t,self.strategy_type)
             # added 
             elif self.strategy_type == "vol":
@@ -349,7 +349,7 @@ class Backtest:
                 logging.info(f"Volatility strategy at {t} - Pending implementation")
             # stop added 
 
-        logging.info(f"Backtest completed. Final portfolio value: {self.broker.get_portfolio_value(info.get_prices(self.final_date))}")
+        logging.info(f"Backtest completed. Final portfolio value: {self.broker.get_portfolio_value(info.get_prices(self.final_date,self.strategy_type))}")
         df = self.broker.get_transaction_log()
         # save to csv, use the backtest name 
         df.to_csv(f"backtests/{self.backtest_name}.csv")

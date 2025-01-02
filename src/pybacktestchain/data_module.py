@@ -238,38 +238,53 @@ class Information:
         # Get the data only between t-s and t
         data = data[(data[self.time_column] >= t - s) & (data[self.time_column] < t)]
         return data
+    
+    def black_scholes(spot_price, strike_price, T, r, sigma, option_type='call'):
+        """
+        function to compute the Black-Scholes option price
 
-    def get_prices(self, t : datetime):
+        Parameters:
+            spot_price (float): The current spot price of the underlying asset
+            strike_price (float): The strike price of the option
+            T (float): Time to expiration in years
+            r (float): Risk-free interest rate (annualized)
+            sigma (float): Volatility of the underlying asset (annualized)
+            option_type (str): The type of option ('call' or 'put')
+
+        Returns:
+            float: The price of the option.
+        """
+        d1 = (np.log(spot_price / strike_price) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
+        d2 = d1 - sigma * np.sqrt(T)
+
+        if option_type.lower() == 'call':
+            option_price = spot_price * norm.cdf(d1) - strike_price * np.exp(-r * T) * norm.cdf(d2)
+        elif option_type.lower() == 'put':
+            option_price = strike_price * np.exp(-r * T) * norm.cdf(-d2) - spot_price * norm.cdf(-d1)
+        else:
+            raise ValueError("Invalid option type. Use 'call' or 'put'.")
+
+        return option_price
+
+    def get_prices(self, t : datetime,strategy_type: str):
         # gets the prices at which the portfolio will be rebalanced at time t 
         data = self.slice_data(t)
         
         # get the last price for each company
         prices = data.groupby(self.company_column)[self.adj_close_column].last()
-        for index in ["^GSPC", "^STOXX50E"]:
-            if index in prices:
-                index_data = data[data[self.company_column] == index]
-                spot_price = index_data[self.adj_close_column].iloc[-1]
-                implied_vol = index_data[self.vol_column].iloc[-1] if self.vol_column in index_data else None
-                if implied_vol is not None:
-                    T = 21/365  # We assume 1 month exp
-                    r = 0.0315  
-                    sigma = implied_vol
-                    K = spot_price * self.percentage_spot  
-                    d1 = (np.log(spot_price / K) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
-                    d2 = d1 - sigma * np.sqrt(T)
-
-                    if self.option_type.lower() == 'call':
-                        # Call pice
-                        option_price = spot_price * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
-                    elif self.option_type.lower() == 'put':
-                        # Put 
-                        option_price = K * np.exp(-r * T) * norm.cdf(-d2) - spot_price * norm.cdf(-d1)
-                    else:
-                        raise ValueError("Invalid option type. Use 'call' or 'put'.")
-
-                    # Adjust price to reflect delta-hedged position of our portfolio
-                    delta = norm.cdf(d1) if self.option_type.lower() == 'call' else -norm.cdf(-d1)
-                    prices[index] = option_price  - delta * spot_price #we buy if delta negative, sell if delta is positive: we have the total delta hedget position  
+        if strategy_type =="vol":
+            for index in ["^GSPC", "^STOXX50E"]:
+                if index in prices:
+                    index_data = data[data[self.company_column] == index]
+                    spot_price = index_data[self.adj_close_column].iloc[-1]
+                    implied_vol = index_data[self.vol_column].iloc[-1] if self.vol_column in index_data else None
+                    if implied_vol is not None:
+                        T = 21/365  # We assume 1 month exp
+                        r = 0.0315  
+                        sigma = implied_vol
+                        K = spot_price * self.percentage_spot  
+                        option_price = self.black_scholes(spot_price, K, T, r, sigma, option_type=self.option_type)
+                        prices[index] = option_price     
         prices = prices.to_dict()
         return prices
 
