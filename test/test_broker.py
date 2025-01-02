@@ -9,7 +9,6 @@ from unittest.mock import patch
 class TestBroker(unittest.TestCase):
     
     def setUp(self):
-        # Initialize broker with 1,000,000 cash
         self.broker = Broker(cash=1000000, verbose=False)
         
     def test_buy_sell(self):
@@ -40,9 +39,9 @@ class TestBroker(unittest.TestCase):
             mock_blockchain = MockBlockchain.return_value
             self.broker.initialize_blockchain("test_chain")
             mock_blockchain.store.assert_called_once()
-    
+    # test the cash part 
     def test_execute_portfolio_cash(self):
-        # Test portfolio execution with 'cash' strategy
+        
         portfolio = {
             "AAPL": 0.5,  # 50% in AAPL
             "GOOGL": 0.5   # 50% in GOOGL
@@ -51,28 +50,29 @@ class TestBroker(unittest.TestCase):
             "AAPL": 150.0,
             "GOOGL": 2500.0
         }
-        # This will trigger the _execute_cash_strategy method
+        
         self.broker.execute_portfolio(portfolio, prices, datetime(2025, 1, 1), "cash")
-        # Check that some transactions were made
+        
         self.assertGreater(len(self.broker.get_transaction_log()), 0)
-    
+     # test portfolio execution with 'vol' strategy - to be completed 
+
     def test_execute_portfolio_vol(self):
-        # Test portfolio execution with 'vol' strategy
+       
         portfolio = {
-            "AAPL": 0.5,  # 50% in AAPL
-            "GOOGL": 0.5   # 50% in GOOGL
+            "AAPL": 0.5,  
+            "GOOGL": 0.5   
         }
         prices = {
             "AAPL": 150.0,
             "GOOGL": 2500.0
         }
-        # This will trigger the _execute_vol_strategy method, but it's a placeholder
+        
         with patch('pybacktestchain.broker.Broker._execute_vol_strategy') as mock_vol_strategy:
             self.broker.execute_portfolio(portfolio, prices, datetime(2025, 1, 1), "vol")
             mock_vol_strategy.assert_called_once()
 
     def test_invalid_strategy(self):
-        # Test invalid strategy type
+
         with self.assertRaises(ValueError):
             Backtest(
                 initial_date=datetime(2025, 1, 1),
