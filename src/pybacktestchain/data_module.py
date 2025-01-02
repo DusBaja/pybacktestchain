@@ -17,6 +17,7 @@ import time
 import json
 import pandas as pd
 
+
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 
@@ -30,33 +31,6 @@ UNIVERSE_SEC.extend(["^GSPC", "^STOXX50E"])
 #---------------------------------------------------------
 # Functions
 #---------------------------------------------------------
-
-#To access our dynamic link for our vol surface (changing everytime because the free version):
-def start_flask_app():
-    """
-    Start the Flask application by running app.py.
-    """
-    try:
-        flask_process = subprocess.Popen(['python', '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/test_flask/app.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        time.sleep(10) 
-        return flask_process
-    except Exception as e:
-        logging.error(f"Error starting Flask app: {e}")
-        return None
-def start_ngrok():
-    """Start ngrok and retrieve the public URL dynamically from the code we run on our server."""
-    # Start ngrok process in the background
-    ngrok_process = subprocess.Popen(['ngrok', 'http', '5000'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    time.sleep(5)
-    
-    try:
-        url_response = requests.get('http://localhost:4040/api/tunnels')
-        url_data = url_response.json()
-        public_url = url_data['tunnels'][0]['public_url']
-        return public_url
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching ngrok URL: {e}")
-        return None
 
 def get_data_api(date, name, base_url):
     """Fetch data from the Flask API based on date and index name and return as a DataFrame."""
@@ -245,6 +219,7 @@ class Information:
     indices: list = None
     option_type: str = 'call'
     percentage_spot: float = 1.0
+    strategy_type: str = 'cash'
     
     def slice_data(self, t : datetime):
         # Get the data module 
@@ -292,9 +267,9 @@ class Information:
                     else:
                         raise ValueError("Invalid option type. Use 'call' or 'put'.")
 
-                    # Adjust price to reflect delta-hedged position
+                    # Adjust price to reflect delta-hedged position of our portfolio
                     delta = norm.cdf(d1) if self.option_type.lower() == 'call' else -norm.cdf(-d1)
-                    prices[index] = option_price  - delta * spot_price #we buy if delta negative, sell if delta is positive !  
+                    prices[index] = option_price  - delta * spot_price #we buy if delta negative, sell if delta is positive: we have the total delta hedget position  
         prices = prices.to_dict()
         return prices
 
@@ -350,26 +325,35 @@ class FirstTwoMoments(Information):
 
         # sort data by ticker and date
         data = data.sort_values(by=[self.company_column, self.time_column])
+        ###################
+        ## modified/added: 
+        if self.strategy_type == 'cash':
+            # expected return per company
+            data['return'] =  data.groupby(self.company_column)[self.adj_close_column].pct_change() #.mean()
+            
+            # expected return by company 
+            information_set['expected_return'] = data.groupby(self.company_column)['return'].mean().to_numpy()
 
-        # expected return per company
-        data['return'] =  data.groupby(self.company_column)[self.adj_close_column].pct_change() #.mean()
-        
-        # expected return by company 
-        information_set['expected_return'] = data.groupby(self.company_column)['return'].mean().to_numpy()
+            # covariance matrix
 
-        # covariance matrix
-
-        # 1. pivot the data
-        data = data.pivot(index=self.time_column, columns=self.company_column, values=self.adj_close_column)
-        # drop missing values
-        data = data.dropna(axis=0)
-        # 2. compute the covariance matrix
-        covariance_matrix = data.cov()
-        # convert to numpy matrix 
-        covariance_matrix = covariance_matrix.to_numpy()
-        # add to the information set
-        information_set['covariance_matrix'] = covariance_matrix
-        information_set['companies'] = data.columns.to_numpy()
+            # 1. pivot the data
+            data = data.pivot(index=self.time_column, columns=self.company_column, values=self.adj_close_column)
+            # drop missing values
+            data = data.dropna(axis=0)
+            # 2. compute the covariance matrix
+            covariance_matrix = data.cov()
+            # convert to numpy matrix 
+            covariance_matrix = covariance_matrix.to_numpy()
+            # add to the information set
+            information_set['covariance_matrix'] = covariance_matrix
+            information_set['companies'] = data.columns.to_numpy()
+        elif self.strategy_type == 'vol':
+            ########@ to be redefined 
+            information_set['expected_return'] = np.zeros(len(data[self.company_column].unique()))  # Placeholder
+            information_set['covariance_matrix'] = np.zeros((len(data[self.company_column].unique()), len(data[self.company_column].unique())))  # Placeholder
+            information_set['companies'] = data[self.company_column].unique()
+        #### end of the modifications 
+        ############################
         return information_set
 class Momentum(Information):
        #### The easiest one 
@@ -403,22 +387,29 @@ class Momentum(Information):
 
         # sort data by ticker and date
         data = data.sort_values(by=[self.company_column, self.time_column])
-
+        #### modified/added: 
+        if self.strategy_type == 'cash':
         # expected return per company
-        data['return'] =  data.groupby(self.company_column)[self.adj_close_column].pct_change().mean()
-        information_set['expected_return'] = data.groupby(self.company_column)['return'].mean().to_numpy()
+            data['return'] =  data.groupby(self.company_column)[self.adj_close_column].pct_change().mean()
+            information_set['expected_return'] = data.groupby(self.company_column)['return'].mean().to_numpy()
 
-        # 1. pivot the data
-        data = data.pivot(index=self.time_column, columns=self.company_column, values=self.adj_close_column)
-        # drop missing values
-        data = data.dropna(axis=0)
-        # 2. compute the covariance matrix
-        covariance_matrix = data.cov()
-        # convert to numpy matrix 
-        covariance_matrix = covariance_matrix.to_numpy()
-        # add to the information set
-        
-        information_set['companies'] = data.columns.to_numpy()
+            # 1. pivot the data
+            data = data.pivot(index=self.time_column, columns=self.company_column, values=self.adj_close_column)
+            # drop missing values
+            data = data.dropna(axis=0)
+            # 2. compute the covariance matrix
+            covariance_matrix = data.cov()
+            # convert to numpy matrix 
+            covariance_matrix = covariance_matrix.to_numpy()
+            # add to the information set
+            
+            information_set['companies'] = data.columns.to_numpy()
+        elif self.strategy_type == 'vol':
+            # Compute volatility for volatility strategy
+            information_set['expected_return'] = np.zeros(len(data[self.company_column].unique()))  # Placeholder
+            information_set['covariance_matrix'] = np.zeros((len(data[self.company_column].unique()), len(data[self.company_column].unique())))  # Placeholder
+            information_set['companies'] = data[self.company_column].unique()
+        ######end of modification 
         return information_set
 
         

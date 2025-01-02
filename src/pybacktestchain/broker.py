@@ -117,9 +117,63 @@ class Broker:
             portfolio_value += position.quantity * market_prices[ticker]
         return portfolio_value
     
-    def execute_portfolio(self, portfolio: dict, prices: dict, date: datetime):
-        """Executes the trades for the portfolio based on the generated weights."""
+    #modifid
+    #def execute_portfolio(self, portfolio: dict, prices: dict, date: datetime):
+    #    """Executes the trades for the portfolio based on the generated weights."""
         
+        # First, handle all the sell orders to free up cash
+    #    for ticker, weight in portfolio.items():
+    #        price = prices.get(ticker)
+    #        if price is None:
+    #            if self.verbose:
+    #                logging.warning(f"Price for {ticker} not available on {date}")
+    #            continue
+    #        
+    #        total_value = self.get_portfolio_value(prices)
+    #        target_value = total_value * weight
+    #        current_value = self.positions.get(ticker, Position(ticker, 0, 0)).quantity * price
+    #        diff_value = target_value - current_value
+    #        quantity_to_trade = int(diff_value / price)
+    #        
+    #        if quantity_to_trade < 0:
+    #            self.sell(ticker, abs(quantity_to_trade), price, date)
+        
+        # Then, handle all the buy orders, checking if there's enough cash
+    #    for ticker, weight in portfolio.items():
+    #        price = prices.get(ticker)
+    #        if price is None:
+    #           if self.verbose:
+    #                logging.warning(f"Price for {ticker} not available on {date}")
+    #            continue
+            
+    #        total_value = self.get_portfolio_value(prices)
+    #        target_value = total_value * weight
+    #        current_value = self.positions.get(ticker, Position(ticker, 0, 0)).quantity * price
+    #        diff_value = target_value - current_value
+    #        quantity_to_trade = int(diff_value / price)
+            
+    #        if quantity_to_trade > 0:
+    #            available_cash = self.get_cash_balance()
+    #            cost = quantity_to_trade * price
+    #            
+    #            if cost <= available_cash:
+    #                self.buy(ticker, quantity_to_trade, price, date)
+    #            else:
+    #                if self.verbose:
+    #                    logging.warning(f"Not enough cash to buy {quantity_to_trade} of {ticker} on {date}. Needed: {cost}, Available: {available_cash}")
+    #                    logging.info(f"Buying as many shares of {ticker} as possible with available cash.")
+    #                quantity_to_trade = int(available_cash / price)
+    #                self.buy(ticker, quantity_to_trade, price, date)
+    ####################
+    def execute_portfolio(self, portfolio: dict, prices: dict, date: datetime, strategy_type: str):
+        """Executes the trades for the portfolio based on the generated weights."""
+        if strategy_type == "cash":
+            self._execute_cash_strategy(portfolio, prices, date)
+        elif strategy_type == "vol":
+            self._execute_vol_strategy(portfolio, prices, date)
+    
+    def _execute_cash_strategy(self, portfolio: dict, prices: dict, date: datetime):
+        """Handle cash strategy trading."""
         # First, handle all the sell orders to free up cash
         for ticker, weight in portfolio.items():
             price = prices.get(ticker)
@@ -164,6 +218,11 @@ class Broker:
                     quantity_to_trade = int(available_cash / price)
                     self.buy(ticker, quantity_to_trade, price, date)
 
+    def _execute_vol_strategy(self, portfolio: dict, prices: dict, date: datetime):
+        """Placeholder for volatility strategy trading."""
+        logging.info(f"Executing volatility strategy on {date} - Pending implementation")
+    ##end of modified 
+    ####################
     def get_transaction_log(self):
         """Returns the transaction log."""
         return self.transaction_log
@@ -209,7 +268,9 @@ class StopLoss(RiskModel):
 class Backtest:
     initial_date: datetime
     final_date: datetime
+    strategy_type: str = "cash" 
     universe = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NVDA', 'INTC', 'CSCO', 'NFLX']
+    index_universe = ['^GSPC', '^STOXX50E']
     information_class : type  = Information
     s: timedelta = timedelta(days=360)
     time_column: str = 'Date'
@@ -225,12 +286,29 @@ class Backtest:
 
 
     def __post_init__(self):
+        #added
+        # Validate strategy type
+        if self.strategy_type not in ["cash", "vol"]:
+            raise ValueError(f"Invalid strategy_type '{self.strategy_type}'. Must be 'cash' or 'vol'.")
+        if self.strategy_type == "vol":
+            self.universe = self.index_universe
+        logging.info(f"Backtest initialized with strategy type: {self.strategy_type}")
+        # end of added 
         self.backtest_name = generate_random_name()
         self.broker.initialize_blockchain(self.name_blockchain)
 
+
     def run_backtest(self):
         logging.info(f"Running backtest from {self.initial_date} to {self.final_date}.")
-        logging.info(f"Retrieving price data for universe")
+        ## added 
+        if self.strategy_type == "cash":
+        ##stop added 
+            logging.info(f"Retrieving price data for universe")
+        ##added
+        elif self.strategy_type == "vol":
+            logging.info(f"Retrieving implied volatility and option data for universe: {self.universe}")
+        #stop added 
+
         self.risk_model = self.risk_model(threshold=0.1)
         # self.initial_date to yyyy-mm-dd format
         init_ = self.initial_date.strftime('%Y-%m-%d')
@@ -250,19 +328,26 @@ class Backtest:
         
         # Run the backtest
         for t in pd.date_range(start=self.initial_date, end=self.final_date, freq='D'):
+            #added
+            if self.strategy_type == "cash":
+            # stop added 
+                if self.risk_model is not None:
+                    portfolio = info.compute_portfolio(t, info.compute_information(t))
+                    prices = info.get_prices(t)
+                    self.risk_model.trigger_stop_loss(t, portfolio, prices, self.broker)
             
-            if self.risk_model is not None:
-                portfolio = info.compute_portfolio(t, info.compute_information(t))
-                prices = info.get_prices(t)
-                self.risk_model.trigger_stop_loss(t, portfolio, prices, self.broker)
-           
-            if self.rebalance_flag().time_to_rebalance(t):
-                logging.info("-----------------------------------")
-                logging.info(f"Rebalancing portfolio at {t}")
-                information_set = info.compute_information(t)
-                portfolio = info.compute_portfolio(t, information_set)
-                prices = info.get_prices(t)
-                self.broker.execute_portfolio(portfolio, prices, t)
+                if self.rebalance_flag().time_to_rebalance(t):
+                    logging.info("-----------------------------------")
+                    logging.info(f"Rebalancing portfolio at {t}")
+                    information_set = info.compute_information(t)
+                    portfolio = info.compute_portfolio(t, information_set)
+                    prices = info.get_prices(t)
+                    self.broker.execute_portfolio(portfolio, prices, t,self.strategy_type)
+            # added 
+            elif self.strategy_type == "vol":
+                # Placeholder for volatility strategy logic (to be implemented later)
+                logging.info(f"Volatility strategy at {t} - Pending implementation")
+            # stop added 
 
         logging.info(f"Backtest completed. Final portfolio value: {self.broker.get_portfolio_value(info.get_prices(self.final_date))}")
         df = self.broker.get_transaction_log()

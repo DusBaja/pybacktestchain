@@ -10,6 +10,7 @@ verbose = False  # Set to True to enable logging, or False to suppress it
 backtest = Backtest(
     initial_date=datetime(2019, 1, 1),
     final_date=datetime(2020, 1, 1),
+    strategy_type= "cash",
     information_class=FirstTwoMoments,
     risk_model=StopLoss,
     name_blockchain='backtest',

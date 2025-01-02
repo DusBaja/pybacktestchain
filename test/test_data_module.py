@@ -1,15 +1,16 @@
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
 import unittest
 import pandas as pd
 from datetime import datetime, timedelta
-from pybacktestchain.data_module import *
-from pybacktestchain.data_module import get_index_data_vol
-flask_process = start_flask_app()
+from src.pybacktestchain.data_module import *
+from flask_app.utils import start_flask_app,start_ngrok
+flask_app_path = '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/flask_app/app.py'
+flask_process = start_flask_app(flask_app_path)
 ngrok_url = start_ngrok()
-
+print("the url",ngrok_url)
 
 class TestDataModule(unittest.TestCase):
     @classmethod

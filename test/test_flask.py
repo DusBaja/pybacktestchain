@@ -1,24 +1,12 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 import requests
 import subprocess
 import time
-import json
 import pandas as pd
-from flask.app import * 
-def start_ngrok():
-    """Start ngrok and retrieve the public URL dynamically."""
-    ngrok_process = subprocess.Popen(['ngrok', 'http', '5000'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    
-    time.sleep(5)
-    
-    # Fetch the public URL from the ngrok API (this works because ngrok exposes a local API on http://localhost:4040)
-    try:
-        url_response = requests.get('http://localhost:4040/api/tunnels')
-        url_data = url_response.json()
-        public_url = url_data['tunnels'][0]['public_url']
-        return public_url
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching ngrok URL: {e}")
-        return None
+from flask_app.utils import start_flask_app,start_ngrok
+
 
 def get_data_api(date, name, base_url):
     """Fetch data from the Flask API based on date and index name and display as a DataFrame."""
@@ -40,7 +28,8 @@ def get_data_api(date, name, base_url):
         print(f"An error occurred while fetching data: {e}")
 
 if __name__ == "__main__":
-    
+    flask_app_path = '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/flask_app/app.py'
+    flask_process = start_flask_app(flask_app_path)
     ngrok_url = start_ngrok()
     if ngrok_url:
         
