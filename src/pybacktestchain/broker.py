@@ -326,7 +326,7 @@ class Backtest:
                                     company_column=self.company_column,
                                     adj_close_column=self.adj_close_column)
         
-        # Run the backtest
+        
         for t in pd.date_range(start=self.initial_date, end=self.final_date, freq='D'):
             #added
             if self.strategy_type == "cash":

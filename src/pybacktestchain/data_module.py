@@ -239,9 +239,10 @@ class Information:
         data = data[(data[self.time_column] >= t - s) & (data[self.time_column] < t)]
         return data
     
+    @staticmethod
     def black_scholes(spot_price, strike_price, T, r, sigma, option_type='call'):
         """
-        function to compute the Black-Scholes option price
+        Function to compute the Black-Scholes option price.
 
         Parameters:
             spot_price (float): The current spot price of the underlying asset
@@ -254,7 +255,7 @@ class Information:
         Returns:
             float: The price of the option.
         """
-        d1 = (np.log(spot_price / strike_price) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
+        d1 = (np.log(spot_price / strike_price) + (r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
         d2 = d1 - sigma * np.sqrt(T)
 
         if option_type.lower() == 'call':
@@ -265,6 +266,7 @@ class Information:
             raise ValueError("Invalid option type. Use 'call' or 'put'.")
 
         return option_price
+
 
     def get_prices(self, t : datetime,strategy_type: str):
         # gets the prices at which the portfolio will be rebalanced at time t 
@@ -371,68 +373,120 @@ class FirstTwoMoments(Information):
         ############################
         return information_set
 class Momentum(Information):
-       #### The easiest one 
-    def compute_portfolio(self, t:datetime, information_set):
-        mu = information_set['expected_return']
-        if len(mu)% 2 == 0:
-            n = len(mu)
-        else: 
-            n = len(mu)-1
-        companies = information_set['companies']
-        # prepare dictionary 
-        portfolio = {company: 0 for company in companies}  # Default weight is 0
-        returns_dict = {company: mu[i] for i, company in enumerate(companies)}
-        sorted_returns = sorted(returns_dict.items(), key=lambda item: item[1], reverse=True)
-        top = sorted_returns[:n//2]
-        bottom = sorted_returns[n//2:]
-        
-        for company, _ in top:
-            portfolio[company] = 1/n
-        
-        for company, _ in bottom:
-            portfolio[company] = -1/n
-                
-        return portfolio
+    previous_best_performer: str = None  # Tracks the last best performer
+    previous_position: dict = None  # Tracks the last position (index and option characteristics)
 
-    def compute_information(self, t : datetime):
-        
-        data = self.slice_data(t)
-        # the information set will be a dictionary with the data
-        information_set = {}
-
-        # sort data by ticker and date
-        data = data.sort_values(by=[self.company_column, self.time_column])
-        #### modified/added: 
+    def compute_portfolio(self, t: datetime, information_set):
+        """
+        Constructs the portfolio based on the selected strategy type (cash or vol).
+        """
         if self.strategy_type == 'cash':
-        # expected return per company
-            data['return'] =  data.groupby(self.company_column)[self.adj_close_column].pct_change().mean()
-            information_set['expected_return'] = data.groupby(self.company_column)['return'].mean().to_numpy()
+            # Cash strategy logic
+            mu = information_set['expected_return']
+            n = len(mu) if len(mu) % 2 == 0 else len(mu) - 1
+            companies = information_set['companies']
 
-            # 1. pivot the data
-            data = data.pivot(index=self.time_column, columns=self.company_column, values=self.adj_close_column)
-            # drop missing values
-            data = data.dropna(axis=0)
-            # 2. compute the covariance matrix
-            covariance_matrix = data.cov()
-            # convert to numpy matrix 
-            covariance_matrix = covariance_matrix.to_numpy()
-            # add to the information set
-            
-            information_set['companies'] = data.columns.to_numpy()
+            # Prepare dictionary
+            portfolio = {company: 0 for company in companies}  # Default weight is 0
+            returns_dict = {company: mu[i] for i, company in enumerate(companies)}
+            sorted_returns = sorted(returns_dict.items(), key=lambda item: item[1], reverse=True)
+            top = sorted_returns[:n // 2]
+            bottom = sorted_returns[n // 2:]
+
+            # Assign weights
+            for company, _ in top:
+                portfolio[company] = 1 / n
+            for company, _ in bottom:
+                portfolio[company] = -1 / n
+
+            return portfolio
+
         elif self.strategy_type == 'vol':
-            # Compute volatility for volatility strategy
-            information_set['expected_return'] = np.zeros(len(data[self.company_column].unique()))  # Placeholder
-            information_set['covariance_matrix'] = np.zeros((len(data[self.company_column].unique()), len(data[self.company_column].unique())))  # Placeholder
-            information_set['companies'] = data[self.company_column].unique()
-        ######end of modification 
-        return information_set
+            
+            indices = ["^GSPC", "^STOXX50E"]
+            expected_returns = {idx: information_set['expected_return'][i]
+                                for i, idx in enumerate(information_set['companies']) if idx in indices}
+            if not expected_returns:
+                # Default to cash strategy if no valid indices are found
+                return self.compute_portfolio(t, {'expected_return': [], 'companies': []})
 
-        
+            
+            best_performer = max(expected_returns, key=expected_returns.get)
+
+            # Check if we need to switch positions
+            if best_performer == self.previous_best_performer:
+                # Keep the previous position
+                return self.previous_position
+
+            # Update the position
+            self.previous_best_performer = best_performer
+
+            # Get the spot price and implied volatility
+            spot_price = information_set['spot_prices'][best_performer]
+            implied_vol = information_set['implied_vols'][best_performer]
+
+            strike_price = spot_price * 1.05 # going long 105% call option for the best performer
+            time_to_expiry = 21 / 365  # 1 month to expiry
+            risk_free_rate = 0.0315  # Assuming 3.15% annualized rate
+
+            if implied_vol is None or spot_price <= 0:
+                raise ValueError("Invalid spot price or implied volatility for the best performer index.")
+
+            call_option_price = Information.black_scholes(
+            spot_price, strike_price, time_to_expiry, risk_free_rate, implied_vol, option_type='call')
 
 
+            # Allocate 100% to the best performer 
+            portfolio = {company: 0 for company in information_set['companies']}
+            portfolio[best_performer] = call_option_price
 
+            # Store the current position
+            self.previous_position = portfolio
 
+            return portfolio
 
+        else:
+            raise ValueError(f"Invalid strategy type: {self.strategy_type}")
 
+    def compute_information(self, t: datetime, base_url=None):
+        """
+        Prepares the information set required for portfolio construction based on strategy type.
+        """
+        if self.strategy_type == 'vol':
+            indices = ["^GSPC", "^STOXX50E"]
+            start_date = (t - self.s).strftime('%Y-%m-%d')
+            end_date = t.strftime('%Y-%m-%d')
+            percentage_spot = self.percentage_spot
 
-# %%
+            information_set = {
+                'expected_return': [],
+                'implied_vols': {},
+                'spot_prices': {},
+                'companies': indices,
+            }
+
+            for index in indices:
+                try:
+                    index_data = get_index_data_vol(index, start_date, end_date, percentage_spot, base_url)
+                    if index_data is not None and not index_data.empty:
+                        latest_data = index_data.iloc[-1]
+                        spot_price = latest_data['Close']
+                        implied_vol = latest_data['Percentage Spot selected vol for the close']
+
+                        information_set['expected_return'].append(spot_price)  # Placeholder for expected return
+                        information_set['implied_vols'][index] = implied_vol
+                        information_set['spot_prices'][index] = spot_price
+                    else:
+                        logging.warning(f"No data returned for index {index}.")
+                except Exception as e:
+                    logging.warning(f"Error fetching data for index {index}: {e}")
+
+            return information_set
+
+        elif self.strategy_type == 'cash':
+            # Default cash strategy logic
+            return super().compute_information(t)
+
+        else:
+            raise ValueError(f"Invalid strategy type: {self.strategy_type}")
+
