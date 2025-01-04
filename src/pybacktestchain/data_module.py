@@ -221,24 +221,46 @@ class Information:
     percentage_spot: float = 1.0
     strategy_type: str = 'cash'
     
-    def slice_data(self, t : datetime):
-        # Get the data module 
-        data = self.data_module.data
-        # Get the time step 
-        s = self.s
+    #def slice_data(self, t : datetime):
+    ##    # Get the data module 
+    #    data = self.data_module.data
+    #    # Get the time step 
+    #    s = self.s
 
         # Convert both `t` and the data column to timezone-aware, if needed
-        if t.tzinfo is not None:
+    #    if t.tzinfo is not None:
             # If `t` is timezone-aware, make sure data is also timezone-aware
-            data[self.time_column] = pd.to_datetime(data[self.time_column]).dt.tz_localize(t.tzinfo.zone, ambiguous='NaT', nonexistent='NaT')
-        else:
-            # If `t` is timezone-naive, ensure the data is timezone-naive as well
-            data[self.time_column] = pd.to_datetime(data[self.time_column]).dt.tz_localize(None)
+    #        data[self.time_column] = pd.to_datetime(data[self.time_column]).dt.tz_localize(t.tzinfo.zone, ambiguous='NaT', nonexistent='NaT')
+    #    else:
+    ##        # If `t` is timezone-naive, ensure the data is timezone-naive as well
+    #        data[self.time_column] = pd.to_datetime(data[self.time_column]).dt.tz_localize(None)
         
         # Get the data only between t-s and t
-        data = data[(data[self.time_column] >= t - s) & (data[self.time_column] < t)]
+    #    data = data[(data[self.time_column] >= t - s) & (data[self.time_column] < t)]
+    #    return data
+    ####modified: 
+    def slice_data(self, t: datetime):
+        """
+        Filters data to include only rows within the time window [t - s, t).
+        Ensures consistency between tz-aware and tz-naive datetime formats.
+        """
+        
+        data = self.data_module.data
+        s = self.s
+
+        # Convert `self.time_column` to naive datetime for uniformity and for the vol strategy to work
+        data[self.time_column] = pd.to_datetime(data[self.time_column], utc=True).dt.tz_localize(None)
+
+        # Ensure `t` is also naive
+        if t.tzinfo is not None:
+            t = t.replace(tzinfo=None)
+
+        # Filter data to [t - s, t) range
+        data = data[(data[self.time_column] >= (t - s)) & (data[self.time_column] < t)]
         return data
-    
+
+
+    ######end of the modification
     @staticmethod
     def black_scholes(spot_price, strike_price, T, r, sigma, option_type='call'):
         """

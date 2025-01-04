@@ -47,11 +47,13 @@ class TestDataModule(unittest.TestCase):
             indices=["^GSPC", "^STOXX50E"],
             strategy_type="cash"
         )
-        test_date = datetime.strptime(self.end_date, "%Y-%m-%d")
+        # Convert test_date to tz-naive
+        test_date = datetime.strptime(self.end_date, "%Y-%m-%d").replace(tzinfo=None)
         prices = information.get_prices(test_date, "cash")
         self.assertIsInstance(prices, dict, "Prices should be a dictionary.")
         self.assertIn("^GSPC", prices, "Expected ^GSPC in the computed prices.")
         self.assertGreater(prices["^GSPC"], 0, "Price for ^GSPC should be greater than 0.")
+
 
     def test_black_scholes_function(self):
         """Test the Black-Scholes option pricing function."""
