@@ -119,5 +119,38 @@ class TestDataModule(unittest.TestCase):
         self.assertIn("^GSPC", portfolio, "Expected ^GSPC in the portfolio.")
         self.assertGreater(portfolio["^GSPC"], 0, "Portfolio allocation to ^GSPC should be greater than 0.")
 
+    def test_volatility_strategy_short_skew(self):
+        """Test the volatility strategy in the ShortSkew class."""
+        # Fetch volatility data
+        skew_data = get_index_data_vol("^GSPC", self.start_date, self.end_date, 0.9, self.ngrok_url)
+        self.assertIsInstance(skew_data, pd.DataFrame)
+        self.assertFalse(skew_data.empty, "Volatility data should not be empty.")
+
+        # Initialize ShortSkew class with vol strategy
+        data_module = DataModule(data=skew_data)
+        short_skew = ShortSkew(
+            s=timedelta(days=20),
+            data_module=data_module,
+            indices=["^GSPC", "^STOXX50E"],
+            strategy_type="vol",
+            percentage_spot=0.9
+        )
+
+        # Generate information set
+        test_date = datetime.strptime(self.end_date, "%Y-%m-%d")
+        information_set = short_skew.compute_information(test_date, base_url=self.ngrok_url)
+
+        # Verify information set structure
+        self.assertIn("realized_vols", information_set, "Information set should contain realized_vols.")
+        self.assertIn("implied_vols", information_set, "Information set should contain implied_vols.")
+        self.assertIn("spot_prices", information_set, "Information set should contain spot_prices.")
+
+        # Test portfolio computation
+        portfolio = short_skew.compute_portfolio(test_date, information_set)
+        self.assertIsInstance(portfolio, dict, "Portfolio should be a dictionary.")
+        self.assertIn("^GSPC", portfolio, "Expected ^GSPC in the portfolio.")
+        self.assertLess(portfolio["^GSPC"], 0, "Portfolio allocation to ^GSPC should be less than 0 (short).")
+
+
 if __name__ == "__main__":
     unittest.main()

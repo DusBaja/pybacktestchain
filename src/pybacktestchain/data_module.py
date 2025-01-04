@@ -490,3 +490,100 @@ class Momentum(Information):
         else:
             raise ValueError(f"Invalid strategy type: {self.strategy_type}")
 
+@dataclass
+class ShortSkew(Information):
+    previous_short_index: str = None  # Tracks the currently shorted index
+    previous_position: dict = None  # Tracks the previous portfolio allocation
+
+    def compute_portfolio(self, t: datetime, information_set):
+        """
+        Constructs the portfolio by shorting a 1-month 90% put option 
+        on the index with the smallest realized volatility over the past 20 days.
+        """
+        if self.strategy_type != 'vol':
+            raise ValueError("ShortSkew strategy is only valid for 'vol' strategy type.")
+        
+        # Identify the index with the smallest 20-day realized volatility
+        realized_vols = information_set['realized_vols']
+        if not realized_vols:
+            raise ValueError("Realized volatility data is missing from the information set.")
+        
+        best_index = min(realized_vols, key=realized_vols.get)
+
+        # Check if the best index has changed
+        if best_index == self.previous_short_index:
+            # If the index hasn't changed, retain the previous position
+            return self.previous_position
+
+        # Update the shorted index
+        self.previous_short_index = best_index
+
+        # Get spot price and implied volatility for the best index
+        spot_price = information_set['spot_prices'][best_index]
+        implied_vol = information_set['implied_vols'][best_index]
+
+        # Define option parameters
+        strike_price = spot_price * 0.9  # 90% put option
+        time_to_expiry = 21 / 365  # 1 month to expiry
+        risk_free_rate = 0.0315  # Assuming 3.15% annualized rate
+
+        if implied_vol is None or spot_price <= 0:
+            raise ValueError("Invalid spot price or implied volatility for the selected index.")
+
+        # Compute the put option price using Black-Scholes
+        put_option_price = Information.black_scholes(
+            spot_price, strike_price, time_to_expiry, risk_free_rate, implied_vol, option_type='put'
+        )
+
+        # Close the previous short position and reallocate
+        portfolio = {company: 0 for company in information_set['companies']}
+        portfolio[best_index] = -put_option_price  # Short position
+
+        # Store the current position
+        self.previous_position = portfolio
+
+        return portfolio
+
+    def compute_information(self, t: datetime, base_url=None):
+        """
+        Prepares the information set required for portfolio construction.
+        """
+        if self.strategy_type != 'vol':
+            raise ValueError("ShortSkew strategy is only valid for 'vol' strategy type.")
+        
+        indices = ["^GSPC", "^STOXX50E"]
+        start_date = (t - timedelta(days=20)).strftime('%Y-%m-%d')  # Look back 20 days
+        end_date = t.strftime('%Y-%m-%d')
+        percentage_spot = self.percentage_spot
+
+        information_set = {
+            'realized_vols': {},  # To store realized volatilities
+            'implied_vols': {},
+            'spot_prices': {},
+            'companies': indices,
+        }
+
+        for index in indices:
+            try:
+                # Fetch historical data
+                index_data = get_index_data_vol(index, start_date, end_date, percentage_spot, base_url)
+                if index_data is not None and not index_data.empty:
+                    # Compute realized volatility over the past 20 days
+                    log_returns = np.log(index_data['Close']).diff().dropna()
+                    realized_vol = log_returns.std() * np.sqrt(252)  # Annualize the volatility
+                    information_set['realized_vols'][index] = realized_vol
+
+                    # Extract the most recent implied volatility and spot price
+                    latest_data = index_data.iloc[-1]
+                    spot_price = latest_data['Close']
+                    implied_vol = latest_data['Percentage Spot selected vol for the close']
+
+                    information_set['implied_vols'][index] = implied_vol
+                    information_set['spot_prices'][index] = spot_price
+                else:
+                    logging.warning(f"No data returned for index {index}.")
+            except Exception as e:
+                logging.warning(f"Error fetching data for index {index}: {e}")
+
+        return information_set
+
