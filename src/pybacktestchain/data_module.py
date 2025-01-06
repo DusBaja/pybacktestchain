@@ -288,7 +288,29 @@ class Information:
             raise ValueError("Invalid option type. Use 'call' or 'put'.")
 
         return option_price
+    @staticmethod
+    def compute_delta(spot_price, strike_price, T, r, sigma, option_type='call'):
+        """
+        Compute the delta of an option using the Black-Scholes model.
 
+        Parameters:
+            spot_price (float): The current spot price of the underlying asset.
+            strike_price (float): The strike price of the option.
+            T (float): Time to expiration in years.
+            r (float): Risk-free interest rate (annualized).
+            sigma (float): Volatility of the underlying asset (annualized).
+            option_type (str): The type of option ('call' or 'put').
+
+        Returns:
+            float: Delta of the option.
+        """
+        d1 = (np.log(spot_price / strike_price) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
+        if option_type.lower() == 'call':
+            return norm.cdf(d1)
+        elif option_type.lower() == 'put':
+            return norm.cdf(d1) - 1
+        else:
+            raise ValueError("Invalid option type. Use 'call' or 'put'.")
 
     def get_prices(self, t : datetime,strategy_type: str):
         # gets the prices at which the portfolio will be rebalanced at time t 

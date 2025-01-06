@@ -102,6 +102,7 @@ class Broker:
             'Price': price,
             'Cash': self.cash
         }])
+        #if not transaction.empty and transaction.notna().any().any():
         self.transaction_log = pd.concat([self.transaction_log, transaction], ignore_index=True)
 
     def get_cash_balance(self):
@@ -219,9 +220,63 @@ class Broker:
                     self.buy(ticker, quantity_to_trade, price, date)
 
     def _execute_vol_strategy(self, portfolio: dict, prices: dict, date: datetime):
-        """Placeholder for volatility strategy trading."""
-        logging.info(f"Executing volatility strategy on {date} - Pending implementation")
-    ##end of modified 
+        """
+        Execute volatility strategy delta hedging for SPX and SX5E.
+
+        Parameters:
+            portfolio (dict): Portfolio weights.
+            prices (dict): Dictionary containing prices and option data for indices.
+            date (datetime): Current date of execution.
+        """
+        for index in ["^GSPC", "^STOXX50E"]:
+            if index not in portfolio:
+                continue
+
+            option_price = prices.get(index)
+            if option_price is None:
+                logging.warning(f"Option price for {index} not available on {date}")
+                continue
+
+            # Retrieve data for delta computation
+            spot_price = portfolio.get(f"{index}_spot_price")
+            implied_vol = portfolio.get(f"{index}_implied_vol")
+            strike_price = portfolio.get(f"{index}_strike_price", spot_price * self.percentage_spot)
+            time_to_maturity = portfolio.get(f"{index}_time_to_maturity", 21 / 365)  # Default 1-month expiry
+            risk_free_rate = portfolio.get(f"{index}_risk_free_rate", 0.0315)  # Default 3.15%
+
+            if not all([spot_price, implied_vol, option_price]):
+                logging.warning(f"Missing data for delta hedging {index} on {date}")
+                continue
+
+            
+            delta = Information.compute_delta(spot_price, strike_price, time_to_maturity, risk_free_rate, implied_vol, self.option_type)
+
+            # Calculate target positions
+            total_value = self.get_portfolio_value(prices)
+            target_value = total_value * portfolio[index]
+            option_quantity = int(target_value / option_price)
+            underlying_hedge_quantity = -delta * option_quantity
+
+            # Adjust option position
+            current_option_position = self.positions.get(index, Position(index, 0, option_price))
+            option_diff = option_quantity - current_option_position.quantity
+
+            if option_diff > 0:
+                self.buy(index, option_diff, option_price, date)
+            elif option_diff < 0:
+                self.sell(index, abs(option_diff), option_price, date)
+
+            # Adjust hedge position
+            hedge_ticker = f"{index}_hedge"
+            current_hedge_position = self.positions.get(hedge_ticker, Position(hedge_ticker, 0, spot_price))
+            hedge_diff = underlying_hedge_quantity - current_hedge_position.quantity
+
+            if hedge_diff > 0:
+                self.buy(hedge_ticker, hedge_diff, spot_price, date)
+            elif hedge_diff < 0:
+                self.sell(hedge_ticker, abs(hedge_diff), spot_price, date)
+
+            logging.info(f"Delta hedge executed for {index} on {date}. Option quantity: {option_quantity}, Hedge quantity: {underlying_hedge_quantity}")    ##end of modified 
     ####################
     def get_transaction_log(self):
         """Returns the transaction log."""

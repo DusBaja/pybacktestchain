@@ -153,6 +153,34 @@ class TestDataModule(unittest.TestCase):
         self.assertIn("^GSPC", portfolio, "Expected ^GSPC in the portfolio.")
         self.assertLess(portfolio["^GSPC"], 0, "Portfolio allocation to ^GSPC should be less than 0 (short).")
 
+    def test_delta_computation(self):
+        """Test the delta computation logic."""
+        spot_price = 4500  
+        strike_price = 4400  
+        T = 21 / 365  # Time to maturity in years (1 month)
+        r = 0.0315  # Risk-free rate (3.15%)
+        sigma = 0.2  # Implied volatility (20%)
+
+        # Call option delta
+        call_delta = Information.compute_delta(spot_price, strike_price, T, r, sigma, option_type='call')
+        self.assertGreaterEqual(call_delta, 0, "Call delta should be >= 0.")
+        self.assertLessEqual(call_delta, 1, "Call delta should be <= 1.")
+
+        # Put option delta
+        put_delta = Information.compute_delta(spot_price, strike_price, T, r, sigma, option_type='put')
+        self.assertLessEqual(put_delta, 0, "Put delta should be <= 0.")
+        self.assertGreaterEqual(put_delta, -1, "Put delta should be >= -1.")
+
+        # Edge case: ATM option
+        strike_price = spot_price  # At-the-money option
+        atm_call_delta = Information.compute_delta(spot_price, strike_price, T, r, sigma, option_type='call')
+        atm_put_delta = Information.compute_delta(spot_price, strike_price, T, r, sigma, option_type='put')
+
+        # Relax the check to a range
+        self.assertGreater(atm_call_delta, 0.45, "ATM call delta should be > 0.45.")
+        self.assertLess(atm_call_delta, 0.55, "ATM call delta should be < 0.55.")
+        self.assertGreater(atm_put_delta, -0.55, "ATM put delta should be > -0.55.")
+        self.assertLess(atm_put_delta, -0.45, "ATM put delta should be < -0.45.")
 
 if __name__ == "__main__":
     unittest.main()
