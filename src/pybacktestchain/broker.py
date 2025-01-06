@@ -251,7 +251,7 @@ class Broker:
             
             delta = Information.compute_delta(spot_price, strike_price, time_to_maturity, risk_free_rate, implied_vol, self.option_type)
 
-            # Calculate target positions
+            
             total_value = self.get_portfolio_value(prices)
             target_value = total_value * portfolio[index]
             option_quantity = int(target_value / option_price)
@@ -277,6 +277,8 @@ class Broker:
                 self.sell(hedge_ticker, abs(hedge_diff), spot_price, date)
 
             logging.info(f"Delta hedge executed for {index} on {date}. Option quantity: {option_quantity}, Hedge quantity: {underlying_hedge_quantity}")    ##end of modified 
+    
+    
     ####################
     def get_transaction_log(self):
         """Returns the transaction log."""
