@@ -13,20 +13,20 @@ class TestBroker(unittest.TestCase):
         
     def test_buy_sell(self):
         # Test buying and selling stock
-        self.broker.buy("AAPL", 100, 150.0, datetime(2025, 1, 1))
+        self.broker.buy("AAPL", 100, 150.0, datetime(2025, 1, 1),"Shares")
         # Check if position exists after buying
         self.assertEqual(self.broker.positions["AAPL"].quantity, 100)
         self.assertEqual(self.broker.get_cash_balance(), 1000000 - 150 * 100)
 
-        self.broker.sell("AAPL", 50, 160.0, datetime(2025, 1, 2))
+        self.broker.sell("AAPL", 50, 160.0, datetime(2025, 1, 2),"Shares")
         # Check position after selling
         self.assertEqual(self.broker.positions["AAPL"].quantity, 50)
         self.assertEqual(self.broker.get_cash_balance(), 1000000 - 150 * 100 + 50 * 160)
 
     def test_transaction_log(self):
         # Check if the transaction log gets updated
-        self.broker.buy("AAPL", 100, 150.0, datetime(2025, 1, 1))
-        self.broker.sell("AAPL", 50, 160.0, datetime(2025, 1, 2))
+        self.broker.buy("AAPL", 100, 150.0, datetime(2025, 1, 1),"Shares")
+        self.broker.sell("AAPL", 50, 160.0, datetime(2025, 1, 2),"Shares")
 
         log = self.broker.get_transaction_log()
         self.assertEqual(len(log), 2)
@@ -54,7 +54,7 @@ class TestBroker(unittest.TestCase):
         self.broker.execute_portfolio(portfolio, prices, datetime(2025, 1, 1), "cash")
         
         self.assertGreater(len(self.broker.get_transaction_log()), 0)
-     # test portfolio execution with 'vol' strategy - to be completed 
+        # test portfolio execution with 'vol' strategy - to be completed 
 
     def test_execute_portfolio_vol(self):
        
@@ -81,7 +81,8 @@ class TestBroker(unittest.TestCase):
                 initial_cash=1000000
             )
     
-    def test_execute_portfolio_vol(self):
+
+    def mock_vol_strategy_side_effect(self,portfolio, prices, date):
         """Test portfolio execution with 'vol' strategy, including delta hedging."""
         portfolio = {
             "^GSPC": 0.6,  # 60% allocation to S&P 500 options
@@ -99,8 +100,6 @@ class TestBroker(unittest.TestCase):
             "^GSPC": {"delta": 0.6},
             "^STOXX50E": {"delta": -0.4}
         }
-
-    def mock_vol_strategy_side_effect(portfolio, prices, date):
         for index, weight in portfolio.items():
             option_price = prices[index]
             underlying_price = prices.get(f"{index}_hedge", None)
@@ -115,8 +114,8 @@ class TestBroker(unittest.TestCase):
             hedge_quantity = -delta * option_quantity
 
             # Mock execution: Add positions and log
-            self.broker.buy(index, option_quantity, option_price, date)
-            self.broker.buy(f"{index}_hedge", hedge_quantity, underlying_price, date)
+            self.broker.buy(index, option_quantity, option_price, date,"Shares")
+            self.broker.buy(f"{index}_hedge", hedge_quantity, underlying_price, date,"Sharses")
 
         with patch('pybacktestchain.broker.Broker._execute_vol_strategy', side_effect=mock_vol_strategy_side_effect):
             self.broker.execute_portfolio(portfolio, prices, datetime(2025, 1, 1), "vol")

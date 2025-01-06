@@ -4,13 +4,14 @@ from dataclasses import dataclass
 from datetime import datetime
 import os 
 import pickle
-from pybacktestchain.data_module import UNIVERSE_SEC, FirstTwoMoments, get_stocks_data, DataModule, Information
+from pybacktestchain.data_module import UNIVERSE_SEC, FirstTwoMoments, get_stocks_data, DataModule, Information,Momentum,ShortSkew
 from pybacktestchain.utils import generate_random_name
 from pybacktestchain.blockchain import Block, Blockchain
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 from datetime import timedelta, datetime
+
 #---------------------------------------------------------
 # Classes
 #---------------------------------------------------------
@@ -20,6 +21,8 @@ class Position:
     ticker: str
     quantity: int
     entry_price: float
+    position_type: str
+
 
 @dataclass
 class Broker:
@@ -30,7 +33,7 @@ class Broker:
     verbose: bool = True
 
     def initialize_blockchain(self, name: str):
-        # Check if the blockchain is already initialized and stored in the blockchain folder
+        '''Check if the blockchain is already initialized and stored in the blockchain folder'''
         chains = os.listdir('blockchain')
         ending = f'{name}.pkl'
         if ending in chains:
@@ -53,46 +56,59 @@ class Broker:
             self.positions = {}
         # Initialize the transaction log as an empty DataFrame if none is provided
         if self.transaction_log is None:
-            self.transaction_log = pd.DataFrame(columns=['Date', 'Action', 'Ticker', 'Quantity', 'Price', 'Cash'])
+            self.transaction_log = pd.DataFrame(columns=['Date', 'Action', 'Ticker', 'Quantity', 'Price', 'Cash','Position Type'])#,'Shares or Options'])
     
         # Initialize the entry prices as a dictionary
         if self.entry_prices is None:
             self.entry_prices = {}
 
-    def buy(self, ticker: str, quantity: int, price: float, date: datetime):
-        """Executes a buy order for the specified ticker."""
+    def buy(self, ticker: str, quantity: int, price: float, date: datetime, position_type="Shares"):
+        """Executes a buy order for the specified ticker (Shares or Options)."""
         total_cost = price * quantity
         if self.cash >= total_cost:
             self.cash -= total_cost
             if ticker in self.positions:
                 position = self.positions[ticker]
-                new_quantity = position.quantity + quantity
-                new_entry_price = ((position.entry_price * position.quantity) + (price * quantity)) / new_quantity
-                position.quantity = new_quantity
-                position.entry_price = new_entry_price
+                if position.position_type == position_type:
+                    # Update existing position
+                    new_quantity = position.quantity + quantity
+                    new_entry_price = ((position.entry_price * position.quantity) + (price * quantity)) / new_quantity
+                    position.quantity = new_quantity
+                    position.entry_price = new_entry_price
+                else:
+                    logging.warning(f"Cannot mix positions of different types for {ticker} ({position.position_type} vs {position_type}).")
             else:
-                self.positions[ticker] = Position(ticker, quantity, price)
-            self.log_transaction(date, 'BUY', ticker, quantity, price)
+                # Create a new position
+                self.positions[ticker] = Position(ticker, quantity, price, position_type)
+            self.log_transaction(date, 'BUY', ticker, quantity, price, position_type)
             self.entry_prices[ticker] = price
         else:
             if self.verbose:
-                logging.warning(f"Not enough cash to buy {quantity} shares of {ticker} at {price}. Available cash: {self.cash}")
-    
-    def sell(self, ticker: str, quantity: int, price: float, date: datetime):
-        """Executes a sell order for the specified ticker."""
-        if ticker in self.positions and self.positions[ticker].quantity >= quantity:
+                logging.warning(f"Not enough cash to buy {quantity} {position_type} of {ticker} at {price}. Available cash: {self.cash}")
+
+    def sell(self, ticker: str, quantity: int, price: float, date: datetime, position_type="Shares"):
+        """Executes a sell order for the specified ticker (Shares or Options)."""
+        if ticker in self.positions:
             position = self.positions[ticker]
-            position.quantity -= quantity
-            self.cash += price * quantity
-            if position.quantity == 0:
-                del self.positions[ticker]
-                del self.entry_prices[ticker]
-            self.log_transaction(date, 'SELL', ticker, quantity, price)
+            if position.position_type == position_type and position.quantity >= quantity:
+                # Update position
+                position.quantity -= quantity
+                self.cash += price * quantity
+                if position.quantity == 0:
+                    del self.positions[ticker]
+                    del self.entry_prices[ticker]
+                self.log_transaction(date, 'SELL', ticker, quantity, price, position_type)
+            else:
+                if self.verbose:
+                    logging.warning(
+                        f"Not enough {position_type} to sell {quantity} of {ticker}. "
+                        f"Position size: {position.quantity if position.position_type == position_type else 0}."
+                    )
         else:
             if self.verbose:
-                logging.warning(f"Not enough shares to sell {quantity} shares of {ticker}. Position size: {self.positions.get(ticker, 0)}")
-    
-    def log_transaction(self, date, action, ticker, quantity, price):
+                logging.warning(f"No position found for {ticker} ({position_type}).")
+
+    def log_transaction(self, date, action, ticker, quantity, price,position_type="shares"):
         """Logs the transaction."""
         transaction = pd.DataFrame([{
             'Date': date,
@@ -100,7 +116,10 @@ class Broker:
             'Ticker': ticker,
             'Quantity': quantity,
             'Price': price,
-            'Cash': self.cash
+            'Cash': self.cash,
+            'Position Type': position_type  # Shares or Options
+            
+
         }])
         #if not transaction.empty and transaction.notna().any().any():
         self.transaction_log = pd.concat([self.transaction_log, transaction], ignore_index=True)
@@ -158,13 +177,13 @@ class Broker:
     #            cost = quantity_to_trade * price
     #            
     #            if cost <= available_cash:
-    #                self.buy(ticker, quantity_to_trade, price, date)
+    #                self.buy(ticker, quantity_to_trade, price, date,"Shares or Options")
     #            else:
     #                if self.verbose:
     #                    logging.warning(f"Not enough cash to buy {quantity_to_trade} of {ticker} on {date}. Needed: {cost}, Available: {available_cash}")
     #                    logging.info(f"Buying as many shares of {ticker} as possible with available cash.")
     #                quantity_to_trade = int(available_cash / price)
-    #                self.buy(ticker, quantity_to_trade, price, date)
+    #                self.buy(ticker, quantity_to_trade, price, date,"Shares or Options")
     ####################
     def execute_portfolio(self, portfolio: dict, prices: dict, date: datetime, strategy_type: str):
         """Executes the trades for the portfolio based on the generated weights."""
@@ -185,7 +204,7 @@ class Broker:
             
             total_value = self.get_portfolio_value(prices)
             target_value = total_value * weight
-            current_value = self.positions.get(ticker, Position(ticker, 0, 0)).quantity * price
+            current_value = self.positions.get(ticker, Position(ticker, 0, 0,"Shares")).quantity * price
             diff_value = target_value - current_value
             quantity_to_trade = int(diff_value / price)
             
@@ -202,7 +221,7 @@ class Broker:
             
             total_value = self.get_portfolio_value(prices)
             target_value = total_value * weight
-            current_value = self.positions.get(ticker, Position(ticker, 0, 0)).quantity * price
+            current_value = self.positions.get(ticker, Position(ticker, 0, 0,"Shares")).quantity * price
             diff_value = target_value - current_value
             quantity_to_trade = int(diff_value / price)
             
@@ -211,13 +230,13 @@ class Broker:
                 cost = quantity_to_trade * price
                 
                 if cost <= available_cash:
-                    self.buy(ticker, quantity_to_trade, price, date)
+                    self.buy(ticker, quantity_to_trade, price, date),"Shares"
                 else:
                     if self.verbose:
                         logging.warning(f"Not enough cash to buy {quantity_to_trade} of {ticker} on {date}. Needed: {cost}, Available: {available_cash}")
                         logging.info(f"Buying as many shares of {ticker} as possible with available cash.")
                     quantity_to_trade = int(available_cash / price)
-                    self.buy(ticker, quantity_to_trade, price, date)
+                    self.buy(ticker, quantity_to_trade, price, date,"Shares")
 
     def _execute_vol_strategy(self, portfolio: dict, prices: dict, date: datetime):
         """
@@ -258,23 +277,23 @@ class Broker:
             underlying_hedge_quantity = -delta * option_quantity
 
             # Adjust option position
-            current_option_position = self.positions.get(index, Position(index, 0, option_price))
+            current_option_position = self.positions.get(index, Position(index, 0, option_price,"Options"))
             option_diff = option_quantity - current_option_position.quantity
 
             if option_diff > 0:
-                self.buy(index, option_diff, option_price, date)
+                self.buy(index, option_diff, option_price, date,"Options")
             elif option_diff < 0:
-                self.sell(index, abs(option_diff), option_price, date)
+                self.sell(index, abs(option_diff), option_price, date,"Options")
 
             # Adjust hedge position
             hedge_ticker = f"{index}_hedge"
-            current_hedge_position = self.positions.get(hedge_ticker, Position(hedge_ticker, 0, spot_price))
+            current_hedge_position = self.positions.get(hedge_ticker, Position(hedge_ticker, 0, spot_price,"Shares"))
             hedge_diff = underlying_hedge_quantity - current_hedge_position.quantity
 
             if hedge_diff > 0:
-                self.buy(hedge_ticker, hedge_diff, spot_price, date)
+                self.buy(hedge_ticker, hedge_diff, spot_price, date,"Shares")
             elif hedge_diff < 0:
-                self.sell(hedge_ticker, abs(hedge_diff), spot_price, date)
+                self.sell(hedge_ticker, abs(hedge_diff), spot_price, date,"Shares")
 
             logging.info(f"Delta hedge executed for {index} on {date}. Option quantity: {option_quantity}, Hedge quantity: {underlying_hedge_quantity}")    ##end of modified 
     

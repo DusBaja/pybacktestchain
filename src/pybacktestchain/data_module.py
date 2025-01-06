@@ -533,8 +533,6 @@ class Momentum(Information):
 
         else:
             raise ValueError(f"Invalid strategy type: {self.strategy_type}")
-
-@dataclass
 class ShortSkew(Information):
     previous_short_index: str = None  # Tracks the currently shorted index
     previous_position: dict = None  # Tracks the previous portfolio allocation
