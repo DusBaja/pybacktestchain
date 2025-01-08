@@ -7,13 +7,13 @@ from datetime import datetime
 
 
 # Set verbosity for logging
-#verbose = False  # Set to True to enable logging, or False to suppress it
+verbose = False  # Set to True to enable logging, or False to suppress it
 ''''''''''
 backtest = Backtest(
-    initial_date=datetime(2019, 1, 1),
-    final_date=datetime(2020, 1, 1),
+    initial_date=datetime(2024, 11, 1),
+    final_date=datetime(2024, 11, 20),
     strategy_type= "cash",
-    information_class=FirstTwoMoments,
+    information_class=Momentum,
     risk_model=StopLoss,
     name_blockchain='backtest',
     verbose=verbose
@@ -31,12 +31,12 @@ print(block_chain.is_valid())
 #%%
 ''''''''' 
 # For the vol strategy ShortSkew: working
-initial_date = datetime(2024, 10, 1)
-final_date = datetime(2024, 10, 20)
+initial_date = datetime(2024, 11, 1)
+final_date = datetime(2024, 11, 20)
 strategy_type = "vol"
 indices = ["^STOXX50E"]  # Focus only on SX5E
 risk_model_class = StopLoss
-name_blockchain = 'shortskew_sx5e'
+name_blockchain = 'shortskew_sx5e'##
 verbose = True
 
 # Initialize the Backtest object with the ShortSkew information class
@@ -44,11 +44,11 @@ backtest = Backtest(
     initial_date=initial_date,
     final_date=final_date,
     strategy_type=strategy_type,
-    information_class=lambda **kwargs: ShortSkew(
+    information_class=lambda **kwargs: Momentum(
         **{
-            "indices": indices,           # Pass indices explicitly here
+            "indices": indices,           
             "strategy_type": strategy_type,
-            **kwargs                      # Pass remaining arguments dynamically
+            **kwargs                      
         }
     ),
     risk_model=risk_model_class,

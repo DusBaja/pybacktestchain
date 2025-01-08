@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import os 
 import pickle
-from pybacktestchain.data_module import UNIVERSE_SEC, FirstTwoMoments, get_stocks_data, DataModule, Information,Momentum,ShortSkew, get_index_data_vol
+from pybacktestchain.data_module import UNIVERSE_SEC, FirstTwoMoments, get_stocks_data, DataModule, Information,Momentum,ShortSkew, get_index_data_vol,get_index_data_vols
 from pybacktestchain.utils import generate_random_name
 from pybacktestchain.blockchain import Block, Blockchain
 from flask_app.utils import start_flask_app, start_ngrok
@@ -63,7 +63,7 @@ class Broker:
         if self.entry_prices is None:
             self.entry_prices = {}
 
-    def buy(self, ticker: str, quantity: int, price: float, date: datetime, position_type="Shares"):
+    def buy(self, ticker: str, quantity: int, price: float, date: datetime, position_type: str):
         """Executes a buy order for the specified ticker (Shares or Options)."""
         total_cost = price * quantity
         if self.cash >= total_cost:
@@ -87,7 +87,7 @@ class Broker:
             if self.verbose:
                 logging.warning(f"Not enough cash to buy {quantity} {position_type} of {ticker} at {price}. Available cash: {self.cash}")
 
-    def sell(self, ticker: str, quantity: int, price: float, date: datetime, position_type="Shares"):
+    def sell(self, ticker: str, quantity: int, price: float, date: datetime, position_type: str):
         """Executes a sell order for the specified ticker (Shares or Options)."""
         if ticker in self.positions:
             position = self.positions[ticker]
@@ -210,7 +210,7 @@ class Broker:
             quantity_to_trade = int(diff_value / price)
             
             if quantity_to_trade < 0:
-                self.sell(ticker, abs(quantity_to_trade), price, date)
+                self.sell(ticker, abs(quantity_to_trade), price, date,"Shares")
         
         # Then, handle all the buy orders, checking if there's enough cash
         for ticker, weight in portfolio.items():
@@ -231,7 +231,7 @@ class Broker:
                 cost = quantity_to_trade * price
                 
                 if cost <= available_cash:
-                    self.buy(ticker, quantity_to_trade, price, date),"Shares"
+                    self.buy(ticker, quantity_to_trade, price, date,"Shares")
                 else:
                     if self.verbose:
                         logging.warning(f"Not enough cash to buy {quantity_to_trade} of {ticker} on {date}. Needed: {cost}, Available: {available_cash}")
@@ -248,6 +248,9 @@ class Broker:
             prices (dict): Dictionary containing prices and option data for indices.
             date (datetime): Current date of execution.
         """
+        if not portfolio:
+            logging.warning(f"Empty or invalid portfolio passed for execution on {date}. Skipping.")
+            return 
         for index in ["^GSPC", "^STOXX50E"]:
             if index not in portfolio:
                 continue
@@ -296,7 +299,8 @@ class Broker:
             elif hedge_diff < 0:
                 self.sell(hedge_ticker, abs(hedge_diff), spot_price, date,"Shares")
 
-            logging.info(f"Delta hedge executed for {index} on {date}. Option quantity: {option_quantity}, Hedge quantity: {underlying_hedge_quantity}")    ##end of modified 
+            logging.info(f"Delta hedge executed for {index} on {date}. Option quantity: {option_quantity}, Hedge quantity: {underlying_hedge_quantity}")    
+            ##end of modified 
     
     
     ####################
@@ -322,13 +326,13 @@ class EndOfMonth(RebalanceFlag):
 
 @dataclass
 class RiskModel:
-    def trigger_stop_loss(self, t: datetime, portfolio: dict, prices: dict):
+    def trigger_stop_loss(self, t: datetime, portfolio: dict, prices: dict,position_type:str,broker: Broker):
         pass
 
 @dataclass
 class StopLoss(RiskModel):
     threshold: float = 0.1
-    def trigger_stop_loss(self, t: datetime, portfolio: dict, prices: dict, broker: Broker):
+    def trigger_stop_loss(self, t: datetime, portfolio: dict, prices: dict,position_type:str, broker: Broker):
         
         for ticker, position in list(broker.positions.items()):
             entry_price = broker.entry_prices[ticker]
@@ -339,13 +343,13 @@ class StopLoss(RiskModel):
             # Calculate the loss percentage
             loss = (current_price - entry_price) / entry_price
             if loss < -self.threshold:
-                logging.info(f"Stop loss triggered for {ticker} at {t}. Selling all shares.")
-                broker.sell(ticker, position.quantity, current_price, t)
+                logging.info(f"Stop loss triggered for {ticker} at {t}. Selling all {position_type}.")
+                broker.sell(ticker, position.quantity, current_price, t,position_type)
 @dataclass
 class Backtest:
     initial_date: datetime
     final_date: datetime
-    strategy_type: str = "cash" 
+    strategy_type: str #= "cash" 
     universe = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NVDA', 'INTC', 'CSCO', 'NFLX']
     index_universe = ['^GSPC', '^STOXX50E']
     information_class : type  = Information
@@ -358,7 +362,7 @@ class Backtest:
     initial_cash: int = 1000000  # Initial cash in the portfolio
     name_blockchain: str = 'backtest'
     verbose: bool = True
-    broker = Broker(cash=initial_cash, verbose=verbose)
+    broker: Broker = Broker(cash=initial_cash, verbose=verbose)
 
 
 
@@ -382,130 +386,129 @@ class Backtest:
 
 
     #def run_backtest(self):
-        #logging.info(f"Running backtest from {self.initial_date} to {self.final_date}.")
+    #    logging.info(f"Running backtest from {self.initial_date} to {self.final_date}.")
         ## added 
-        #if self.strategy_type == "cash":
+    #    if self.strategy_type == "cash":
         ##stop added 
-        #    logging.info(f"Retrieving price data for universe")
+    #        logging.info(f"Retrieving price data for universe")
         ##added
-        #elif self.strategy_type == "vol":
-        #    logging.info(f"Retrieving implied volatility and option data for universe: {self.universe}")
+    #    elif self.strategy_type == "vol":
+    #        logging.info(f"Retrieving implied volatility and option data for universe: {self.universe}")
         #stop added 
 
-        #self.risk_model = self.risk_model(threshold=0.1)
-        # self.initial_date to yyyy-mm-dd format
-        #init_ = self.initial_date.strftime('%Y-%m-%d')
-        # self.final_date to yyyy-mm-dd format
-        #final_ = self.final_date.strftime('%Y-%m-%d')
-        #df = get_stocks_data(self.universe, init_, final_)
+    #    self.risk_model = self.risk_model(threshold=0.1)
+    #    self.initial_date #to yyyy-mm-dd format
+    #    init_ = self.initial_date.strftime('%Y-%m-%d')
+    #    self.final_date #to yyyy-mm-dd format
+    #    final_ = self.final_date.strftime('%Y-%m-%d')
+    #    df = get_stocks_data(self.universe, init_, final_)
 
         # Initialize the DataModule
-        #data_module = DataModule(df)
+    #    data_module = DataModule(df)
 
         # Create the Information object
-        #info = self.information_class(s = self.s, 
-        #                            data_module = data_module,
-        #                            time_column=self.time_column,
-        #                            company_column=self.company_column,
-        #                            adj_close_column=self.adj_close_column)
+    #    info = self.information_class(s = self.s, 
+    #                                data_module = data_module,
+    #                                time_column=self.time_column,
+    #                                company_column=self.company_column,
+    #                                adj_close_column=self.adj_close_column)
         
         
-        #for t in pd.date_range(start=self.initial_date, end=self.final_date, freq='D'):
+    #    for t in pd.date_range(start=self.initial_date, end=self.final_date, freq='D'):
             #added
-        #    if self.strategy_type == "cash":
+    #        if self.strategy_type == "cash":
             # stop added 
-        #        if self.risk_model is not None:
-        #            portfolio = info.compute_portfolio(t, info.compute_information(t))
-        #            prices = info.get_prices(t,self.strategy_type)
-        #            self.risk_model.trigger_stop_loss(t, portfolio, prices, self.broker)
+    #            if self.risk_model is not None:
+    #                portfolio = info.compute_portfolio(t, info.compute_information(t))
+    #                prices = info.get_prices(t,self.strategy_type)
+    #                self.risk_model.trigger_stop_loss(t, portfolio, prices, self.broker)
             
-        #        if self.rebalance_flag().time_to_rebalance(t):
-        #            logging.info("-----------------------------------")
-        #            logging.info(f"Rebalancing portfolio at {t}")
-        #            information_set = info.compute_information(t)
-        #            portfolio = info.compute_portfolio(t, information_set)
-        #            prices = info.get_prices(t,self.strategy_type)
-        #            self.broker.execute_portfolio(portfolio, prices, t,self.strategy_type)
+    #            if self.rebalance_flag().time_to_rebalance(t):
+    #                logging.info("-----------------------------------")
+    #                logging.info(f"Rebalancing portfolio at {t}")
+    #                information_set = info.compute_information(t)
+    #                portfolio = info.compute_portfolio(t, information_set)
+    #                prices = info.get_prices(t,self.strategy_type)
+    #                self.broker.execute_portfolio(portfolio, prices, t,self.strategy_type)
             # added 
-       #     elif self.strategy_type == "vol":
+    #        elif self.strategy_type == "vol":
                 # Placeholder for volatility strategy logic (to be implemented later)
-        #        logging.info(f"Volatility strategy at {t} - Pending implementation")
+    #            logging.info(f"Volatility strategy at {t} - Pending implementation")
             # stop added 
 
-        #logging.info(f"Backtest completed. Final portfolio value: {self.broker.get_portfolio_value(info.get_prices(self.final_date,self.strategy_type))}")
-        #df = self.broker.get_transaction_log()
+    #    logging.info(f"Backtest completed. Final portfolio value: {self.broker.get_portfolio_value(info.get_prices(self.final_date,self.strategy_type))}")
+    #    df = self.broker.get_transaction_log()
         # save to csv, use the backtest name 
-        #df.to_csv(f"backtests/{self.backtest_name}.csv")
+    #    df.to_csv(f"backtests/{self.backtest_name}.csv")
 
         # store the backtest in the blockchain
-        #self.broker.blockchain.add_block(self.backtest_name, df.to_string())
+    #    self.broker.blockchain.add_block(self.backtest_name, df.to_string())
     ##updated version
     #def run_backtest(self):
-        #logging.info(f"Running backtest from {self.initial_date} to {self.final_date}.")
+    #    logging.info(f"Running backtest from {self.initial_date} to {self.final_date}.")
 
-        #if self.strategy_type == "vol":
-        #    logging.info(f"Retrieving implied volatility and option data for universe: {self.universe}")
-         #   init_ = self.initial_date.strftime('%Y-%m-%d')
-        #    final_ = self.final_date.strftime('%Y-%m-%d')
-        #    df = pd.concat(
-        #        [
-         #           get_index_data_vol(
-        #                index,
-        #               init_,
-         #               final_,
-        #                1,
-        #                base_url=self.ngrok_url  # Pass the dynamic ngrok URL
-        #            ) for index in self.universe
-        #        ],
-        #        ignore_index=True
-        #    )
-        #else:
-        #    logging.info(f"Retrieving price data for universe")
-         #   init_ = self.initial_date.strftime('%Y-%m-%d')
-        #    final_ = self.final_date.strftime('%Y-%m-%d')
-        #    df = get_stocks_data(self.universe, init_, final_)
+    #    if self.strategy_type == "vol":
+    #        logging.info(f"Retrieving implied volatility and option data for universe: {self.universe}")
+    #        init_ = self.initial_date.strftime('%Y-%m-%d')
+    #        final_ = self.final_date.strftime('%Y-%m-%d')
+    #        df = pd.concat(
+    #            [
+    #                get_index_data_vol(
+    #                    index,
+    #                   init_,
+    #                    final_,
+    #                    1,
+    #                    base_url=self.ngrok_url  # Pass the dynamic ngrok URL
+    #                ) for index in self.universe
+    #            ],
+    #            ignore_index=True
+    #        )
+    #    else:
+    #        logging.info(f"Retrieving price data for universe")
+    #        init_ = self.initial_date.strftime('%Y-%m-%d')
+    #        final_ = self.final_date.strftime('%Y-%m-%d')
+    #        df = get_stocks_data(self.universe, init_, final_)
 
-        #data_module = DataModule(df)
+    #    data_module = DataModule(df)
 
-        #info = self.information_class(
-        #    s=self.s,
-        #    data_module=data_module,
-        #    time_column=self.time_column,
-        #    company_column=self.company_column,
-        #    adj_close_column=self.adj_close_column,
-        #    indices=self.index_universe,
-         #   strategy_type=self.strategy_type,
-        #    percentage_spot=1.0  # Adjust as necessary
-        #)
+    #    info = self.information_class(
+    #        s=self.s,
+    #        data_module=data_module,
+    #        time_column=self.time_column,
+    #        company_column=self.company_column,
+    #        adj_close_column=self.adj_close_column,
+    #        indices=self.index_universe,
+    #        strategy_type=self.strategy_type,
+    #        percentage_spot=1.0  # Adjust as necessary
+    #    )
 
-        #for t in pd.date_range(start=self.initial_date, end=self.final_date, freq='D'):
-        #    if self.strategy_type == "cash":
-        #        if self.risk_model is not None:
-        #            portfolio = info.compute_portfolio(t, info.compute_information(t))
-        #            prices = info.get_prices(t, self.strategy_type)
-        #            self.risk_model.trigger_stop_loss(t, portfolio, prices, self.broker)
+    #    for t in pd.date_range(start=self.initial_date, end=self.final_date, freq='D'):
+    #        if self.strategy_type == "cash":
+    #            if self.risk_model is not None:
+    #                portfolio = info.compute_portfolio(t, info.compute_information(t))
+    #                prices = info.get_prices(t, self.strategy_type)
+    #                self.risk_model.trigger_stop_loss(t, portfolio, prices, self.broker)
 
-        #        if self.rebalance_flag().time_to_rebalance(t):
-        #            logging.info("-----------------------------------")
-        #            logging.info(f"Rebalancing portfolio at {t}")
-        #            information_set = info.compute_information(t)
-        #            portfolio = info.compute_portfolio(t, information_set)
-        #            prices = info.get_prices(t, self.strategy_type)
-        #            self.broker.execute_portfolio(portfolio, prices, t, self.strategy_type)
+    #            if self.rebalance_flag().time_to_rebalance(t):
+    #                logging.info("-----------------------------------")
+    #                logging.info(f"Rebalancing portfolio at {t}")
+    #                information_set = info.compute_information(t)
+    #                portfolio = info.compute_portfolio(t, information_set)
+    #                prices = info.get_prices(t, self.strategy_type)
+    #                self.broker.execute_portfolio(portfolio, prices, t, self.strategy_type)
+    #        elif self.strategy_type == "vol":
+    #            if self.rebalance_flag().time_to_rebalance(t):
+    #                logging.info("-----------------------------------")
+    #                logging.info(f"Rebalancing volatility strategy at {t}")
+    #                information_set = info.compute_information(t, base_url=self.ngrok_url)
+    #                portfolio = info.compute_portfolio(t, information_set)
+    #                prices = info.get_prices(t, self.strategy_type)
+    #                self.broker.execute_portfolio(portfolio, prices, t, self.strategy_type)
 
-        #    elif self.strategy_type == "vol":
-        #        if self.rebalance_flag().time_to_rebalance(t):
-        #            logging.info("-----------------------------------")
-        #            logging.info(f"Rebalancing volatility strategy at {t}")
-        #            information_set = info.compute_information(t, base_url=self.ngrok_url)
-        #            portfolio = info.compute_portfolio(t, information_set)
-        #            prices = info.get_prices(t, self.strategy_type)
-        #            self.broker.execute_portfolio(portfolio, prices, t, self.strategy_type)
-
-        #logging.info(f"Backtest completed. Final portfolio value: {self.broker.get_portfolio_value(info.get_prices(self.final_date, self.strategy_type))}")
-        #df = self.broker.get_transaction_log()
-        #df.to_csv(f"backtests/{self.backtest_name}.csv")
-        #self.broker.blockchain.add_block(self.backtest_name, df.to_string())
+    #    logging.info(f"Backtest completed. Final portfolio value: {self.broker.get_portfolio_value(info.get_prices(self.final_date, self.strategy_type))}")
+    #    df = self.broker.get_transaction_log()
+    #    df.to_csv(f"backtests/{self.backtest_name}.csv")
+    #    self.broker.blockchain.add_block(self.backtest_name, df.to_string())
     ###third version: 
     def run_backtest(self):
         logging.info(f"Running backtest from {self.initial_date} to {self.final_date}.")
@@ -513,23 +516,22 @@ class Backtest:
         # Format initial and final dates
         init_ = self.initial_date.strftime('%Y-%m-%d')
         final_ = self.final_date.strftime('%Y-%m-%d')
-        
+        self.risk_model = self.risk_model(threshold=0.1)
         # Retrieve data specific to the strategy type
         if self.strategy_type == "vol":
-            df = pd.concat(
-                [
-                    get_index_data_vol(
-                        index,
+            logging.info("Retrieving implied volatility and option data for the universe.")
+            df = get_index_data_vols(
+                        self.universe,
                         init_,
                         final_,
                         percentage_spot=1.0,  # Example parameter for vol data
                         base_url=self.ngrok_url
-                    ) for index in self.universe
-                ],
-                ignore_index=True
-            )
+                    )
+            print("my df for me",df)
         elif self.strategy_type == "cash":
+            logging.info("Retrieving price data for the universe.")
             df = get_stocks_data(self.universe, init_, final_)
+            
         else:
             raise ValueError(f"Unsupported strategy type: {self.strategy_type}")
 
@@ -543,25 +545,41 @@ class Backtest:
             'time_column': self.time_column,
             'company_column': self.company_column,
             'adj_close_column': self.adj_close_column,
-            
         }
-        
-        # Add specific arguments for volatility strategies
         if self.strategy_type == "vol":
-            info_kwargs.update({'indices': self.index_universe,'strategy_type': self.strategy_type})
+            info_kwargs.update({'indices': self.index_universe, 'strategy_type': self.strategy_type})
 
         # Initialize the information class dynamically
         info = self.information_class(**info_kwargs)
-
+        
         # Run the backtest logic
         for t in pd.date_range(start=self.initial_date, end=self.final_date, freq='D'):
+        #    if self.rebalance_flag().time_to_rebalance(t):
+        #        logging.info(f"Rebalancing portfolio at {t}.")
+        #        information_set = info.compute_information(t, base_url=self.ngrok_url)
+        #        portfolio = info.compute_portfolio(t, information_set)
+        #        prices = info.get_prices(t, self.strategy_type)
+        #        self.broker.execute_portfolio(portfolio, prices, t, self.strategy_type)
+            logging.info(f"Processing date: {t}")
+            if self.risk_model is not None:
+                #logging.info("Applying risk model.")
+                portfolio = info.compute_portfolio(t, info.compute_information(t,base_url=self.ngrok_url))
+                logging.debug(f"Portfolio at {t}: {portfolio}")
+                prices = info.get_prices(t, self.strategy_type)
+                
+                logging.debug(f"Prices at {t}: {prices}")
+                logging.debug(f"Broker state at {t}: {self.broker}")
+                self.risk_model.trigger_stop_loss(t, portfolio, prices,'Shares', self.broker) #test with only shares
+
             if self.rebalance_flag().time_to_rebalance(t):
-                logging.info(f"Rebalancing portfolio at {t}.")
-                information_set = info.compute_information(t, base_url=self.ngrok_url)
+                logging.info("-----------------------------------")
+                logging.info(f"Rebalancing portfolio at {t}")
+                information_set = info.compute_information(t,base_url=self.ngrok_url)
                 portfolio = info.compute_portfolio(t, information_set)
                 prices = info.get_prices(t, self.strategy_type)
                 self.broker.execute_portfolio(portfolio, prices, t, self.strategy_type)
 
+            
         # Final portfolio value
         logging.info(f"Backtest completed. Final portfolio value: {self.broker.get_portfolio_value(info.get_prices(self.final_date, self.strategy_type))}")
         df = self.broker.get_transaction_log()
@@ -571,3 +589,4 @@ class Backtest:
 
         # Store the backtest in the blockchain
         self.broker.blockchain.add_block(self.backtest_name, df.to_string())
+        logging.info("Backtest results stored in blockchain.")

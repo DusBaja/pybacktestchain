@@ -15,7 +15,6 @@ import requests
 import subprocess
 import time
 import json
-import pandas as pd
 
 
 # Setup logging
@@ -41,33 +40,54 @@ def get_data_api(date, name, base_url):
         name = "S&P 500"
     if name == "^STOXX50E":
         name = "Euro Stoxx 50"
-
-    try:
-        # Make the API request
-        response = requests.get(f"{base_url}/api/data", params={"date": date, "index": name})
-
-        if response.status_code == 200:
-            # Parse the response data
+    
+   
+    # Make the API request
+    #response = requests.get(f"{base_url}/api/data", params={"date": date, "index": name})
+    #data = response.json()
+    #try: 
+    #    df = pd.DataFrame(data)
+    #    return df
+    #except ValueError as e:
+    #    print(f"Raw API response for {name} on {date}: {response.text}")
+    #    logging.error(f"Error creating DataFrame for {name} on {date}: {e}. Data: {data}")
+    #    return pd.DataFrame()
+    for attempt in range(3):
+        try:
+            logging.info(f"Attempting to fetch data for {name} on {date} (Attempt {attempt + 1}/{3})")
+            # Make the API request
+            response = requests.get(f"{base_url}/api/data", params={"date": date, "index": name}, timeout=10)
+            # Raise an exception for HTTP errors
+            response.raise_for_status()
+            # Parse the response as JSON
             data = response.json()
-            if data:
-                df = pd.DataFrame(data)
+            df = pd.DataFrame(data)
+            if not df.empty:
+                logging.info(f"Successfully fetched data for {name} on {date}")
                 return df
             else:
-                logging.warning(f"No data available for {name} on {date}. Returning empty DataFrame.")
+                logging.warning(f"No data returned for {name} on {date}. Returning empty DataFrame.")
                 return pd.DataFrame()
-        elif response.status_code == 404:
-            logging.warning(f"No matching data found for {name} on {date}. Returning empty DataFrame.")
-            return pd.DataFrame()
-        else:
-            logging.error(f"Error: {response.status_code} - {response.text}")
-            return pd.DataFrame()
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Request failed: {e}")
-        return pd.DataFrame()  # Return an empty DataFrame on request failure
-    except Exception as e:
-        logging.error(f"An unexpected error occurred while fetching data: {e}")
-        return pd.DataFrame()  # Return an empty DataFrame for unexpected errors
+        
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Request failed for {name} on {date}: {e}")
+            if attempt < 3 - 1:  # Retry only if attempts remain
+                wait_time = 2 ** attempt
+                logging.info(f"Retrying after {wait_time} seconds...")
+                time.sleep(wait_time)
+            else:
+                logging.error(f"All retry attempts failed for {name} on {date}. Returning empty DataFrame.")
+                return pd.DataFrame()
 
+        except ValueError as e:
+            logging.error(f"Error processing data for {name} on {date}: {e}")
+            return pd.DataFrame()
+
+    # Fallback if all retries fail
+    logging.error(f"Failed to fetch data for {name} on {date} after {3} retries.")
+    return pd.DataFrame()
+    
+    
 def get_volatility_from_api(date, index_name, base_url):
     """ Fetch volatility surface data from the Flask API and return it as a DataFrame """
     return get_data_api(date, index_name, base_url)
@@ -180,20 +200,24 @@ def get_volatility(vol_surface_df, index_price, percentage_spot):
 
     return volatility
 
-def get_index_data_vol(ticker, start_date, end_date, percentage_spot=1, base_url=None):
+def get_index_data_vol(ticker,start_date,end_date, percentage_spot=1, base_url=None):
     """
     Retrieves historical index data and appends ATM volatility data from an API.
 
     Parameters:
         ticker (str): The ticker symbol for the index (e.g., '^GSPC' or '^STOXX50E').
-        start_date (str): Start date for the historical data, after 2024-09-30.
-        end_date (str): End date for the historical data, up to today.
+        start_date: start date for the historical data, after 2024-09-30.
+        end_date: end date for the historical data 
         base_url (str): The base URL of the Flask API.
 
     Returns:
         pd.DataFrame: DataFrame with historical data and ATM volatility for each date.
     """
-    if datetime.strptime(start_date, '%Y-%m-%d') < datetime.strptime('2024-09-30', '%Y-%m-%d'):
+    if isinstance(start_date, str):
+        start_date_ = datetime.strptime(start_date.split(" ")[0], '%Y-%m-%d').date()  # Remove time if present
+    elif isinstance(start_date, datetime):
+        start_date_ = start_date.date()  # Get just the date part
+    if start_date_ < datetime.strptime('2024-09-30', '%Y-%m-%d').date():
         raise ValueError("Start date must be after 2024-09-30 due to data availability.")
 
     if ticker not in ["^GSPC", "^STOXX50E"]:
@@ -201,29 +225,86 @@ def get_index_data_vol(ticker, start_date, end_date, percentage_spot=1, base_url
 
     index = yf.Ticker(ticker)
     data = index.history(start=start_date, end=end_date, auto_adjust=False, actions=False)
+    
     df = pd.DataFrame(data)
     df['ticker'] = ticker
     df.reset_index(inplace=True)
-
     for date in df['Date']:
         date_str = date.strftime('%Y-%m-%d')
 
         # Fetch volatility surface data from the API
         vol_surface_df = get_volatility_from_api(date_str, "S&P 500" if ticker == "^GSPC" else "Euro Stoxx 50", base_url)
-
+        
         if vol_surface_df is not None and not vol_surface_df.empty:
             index_price = df.loc[df['Date'] == date, 'Close'].values[0]
             volatility = get_volatility(vol_surface_df, index_price, percentage_spot)
+            
             df.loc[df['Date'] == date, 'Percentage Spot selected vol for the close'] = volatility
+            
         else:
             logging.warning(f"No volatility surface data found for date: {date_str}")
             df.loc[df['Date'] == date, 'Percentage Spot selected vol for the close'] = np.nan
 
         logging.info(f"Columns from the vol surface for {date_str}: {vol_surface_df}")
-
+        
     return df
 
+def get_index_data_vols(tickers,start_date,end_date, percentage_spot=1, base_url=None):
+    """
+    Retrieves historical index data and appends ATM volatility data from an API.
 
+    Parameters:
+        tickers (str): tickers symbol for the index (e.g., '^GSPC' and '^STOXX50E').
+        start_date: start date for the historical data, after 2024-09-30.
+        end_date: end date for the historical data 
+        base_url (str): The base URL of the Flask API.
+
+    Returns:
+        pd.DataFrame: DataFrame with historical data and ATM volatility for each date.
+    """
+    if isinstance(start_date, str):
+        start_date_ = datetime.strptime(start_date.split(" ")[0], '%Y-%m-%d').date()  # Remove time if present
+    elif isinstance(start_date, datetime):
+        start_date_ = start_date.date()  # Get just the date part
+    if start_date_ < datetime.strptime('2024-09-30', '%Y-%m-%d').date():
+        raise ValueError("Start date must be after 2024-09-30 due to data availability.")
+
+    for ticker in tickers:
+        if ticker not in ["^GSPC", "^STOXX50E"]:
+            raise ValueError("The index ticker must be either '^GSPC' or '^STOXX50E'.")
+    dfs = []
+    for ticker in tickers: 
+        try:
+            index = yf.Ticker(ticker)
+            data = index.history(start=start_date, end=end_date, auto_adjust=False, actions=False)
+            
+            df = pd.DataFrame(data)
+            df['ticker'] = ticker
+            df.reset_index(inplace=True)
+            for date in df['Date']:
+                date_str = date.strftime('%Y-%m-%d')
+
+                # Fetch volatility surface data from the API
+                vol_surface_df = get_volatility_from_api(date_str, "S&P 500" if ticker == "^GSPC" else "Euro Stoxx 50", base_url)
+                
+                if vol_surface_df is not None and not vol_surface_df.empty:
+                    index_price = df.loc[df['Date'] == date, 'Close'].values[0]
+                    volatility = get_volatility(vol_surface_df, index_price, percentage_spot)
+                    
+                    df.loc[df['Date'] == date, 'Percentage Spot selected vol for the close'] = volatility
+                    
+                else:
+                    logging.warning(f"No volatility surface data found for date: {date_str}")
+                    df.loc[df['Date'] == date, 'Percentage Spot selected vol for the close'] = np.nan
+
+                logging.info(f"Columns from the vol surface for {date_str}: {vol_surface_df}")
+            if not df.empty:
+                dfs.append(df)
+        except:
+            logging.warning(f"Index {ticker} not found")    
+    data = pd.concat(dfs,ignore_index=True)
+    
+    return data
 
 #---------------------------------------------------------
 # Classes 
@@ -242,7 +323,7 @@ class Information:
     time_column: str = 'Date'
     company_column: str = 'ticker'
     adj_close_column: str = 'Close'
-    vol_column: str = 'ImpliedVol'
+    vol_column: str = 'Percentage Spot selected vol for the close'#'ImpliedVol'
     indices: list = None
     option_type: str = 'call'
     percentage_spot: float = 1.0
@@ -405,7 +486,7 @@ class FirstTwoMoments(Information):
             logging.warning(e)
             return {k: 1/len(information_set['companies']) for k in information_set['companies']}
 
-    def compute_information(self, t : datetime):
+    def compute_information(self, t : datetime,base_url=None): # I added the base_url part even if not used as it would block the code otherwise
         try:
             # Get the data module 
             data = self.slice_data(t)
@@ -452,6 +533,7 @@ class FirstTwoMoments(Information):
             "implied_vols": {},
             "spot_prices": {}
             }
+
 class Momentum(Information):
     previous_best_performer: str = None  # Tracks the last best performer
     previous_position: dict = None  # Tracks the last position (index and option characteristics)
@@ -461,15 +543,17 @@ class Momentum(Information):
         Constructs the portfolio based on the selected strategy type (cash or vol).
         """
         if self.strategy_type == 'cash':
-            if not information_set.get('expected_return') or not information_set.get('companies'):
-                logging.warning("Empty information set provided. Returning equal-weight portfolio.")
-                return {company: 1 / len(self.indices) for company in self.indices}  # Equal-weight fallback
+            expected_return = information_set.get('expected_return', np.array([]))
+            companies = information_set.get('companies', np.array([]))
 
+            # Ensure valid information set
+            if expected_return.size == 0 or companies.size == 0:
+                logging.error("Information set is empty or incomplete. Cannot construct portfolio.")
+                return {} 
+         
             # Cash strategy logic
-            mu = information_set['expected_return']
+            mu = expected_return
             n = len(mu)
-            companies = information_set['companies']
-
             # Prepare dictionary
             portfolio = {company: 0 for company in companies}
 
@@ -486,15 +570,19 @@ class Momentum(Information):
 
         elif self.strategy_type == 'vol':
             indices = ["^GSPC", "^STOXX50E"]
-            expected_returns = {
-                idx: information_set['expected_return'][i]
-                for i, idx in enumerate(information_set['companies']) if idx in indices
-            }
-            if not expected_returns:
-                logging.warning("No valid indices found. Returning zero allocation portfolio.")
-                return {company: 0 for company in information_set['companies']}  # Zero allocation fallback
+            implied = information_set.get("implied_vols", [])
+            companies = information_set.get("companies", [])
+            
+            if  len(companies) == 0 or len(implied) == 0:
+                logging.warning("No valid indices found. Returning empty portfolio.")
+                return {}  # Empty portfolio fallback for vol strategy
 
-            best_performer = max(expected_returns, key=expected_returns.get)
+            # Map highest implied to indices
+            implieds = {
+                idx: implied[idx]
+                for idx in companies if idx in indices and idx in implied
+            }
+            best_performer = max(implieds, key=implieds.get)
 
             # Check if we need to switch positions
             if best_performer == self.previous_best_performer:
@@ -504,23 +592,23 @@ class Momentum(Information):
             self.previous_best_performer = best_performer
 
             # Get the spot price and implied volatility
-            spot_price = information_set['spot_prices'][best_performer]
-            implied_vol = information_set['implied_vols'][best_performer]
+            spot_price = information_set["spot_prices"].get(best_performer, 0)
+            implied_vol = information_set["implied_vols"].get(best_performer, None)
 
             strike_price = spot_price * 1.05  # Going long 105% call option for the best performer
             time_to_expiry = 21 / 365  # 1 month to expiry
             risk_free_rate = 0.0315  # Assuming 3.15% annualized rate
 
             if implied_vol is None or spot_price <= 0:
-                logging.warning("Invalid spot price or implied volatility. Returning zero allocation portfolio.")
-                return {company: 0 for company in information_set['companies']}
-
+                logging.warning("Invalid spot price or implied volatility. Returning empty portfolio.")
+                return {company: 0 for company in companies}
+            
             call_option_price = Information.black_scholes(
                 spot_price, strike_price, time_to_expiry, risk_free_rate, implied_vol, option_type='call'
             )
 
             # Allocate 100% to the best performer
-            portfolio = {company: 0 for company in information_set['companies']}
+            portfolio = {company: 0 for company in companies}
             portfolio[best_performer] = call_option_price
 
             # Store the current position
@@ -535,69 +623,86 @@ class Momentum(Information):
         """
         Prepares the information set required for portfolio construction based on strategy type.
         """
-        try:
+        data =self.slice_data(t)
+        information_set = {}
+        if self.strategy_type == 'cash':           
+            # sort data by ticker and date
+            data = data.sort_values(by=[self.company_column, self.time_column])
+            data['return'] =  data.groupby(self.company_column)[self.adj_close_column].pct_change()
+            
+            # expected return by company 
+            expected_return = data.groupby(self.company_column)['return'].mean().to_numpy()            
+            companies = data[self.company_column].unique()
+            information_set = {
+                    "expected_return": expected_return,
+                    "companies": companies,
+                }
+            return information_set
+        elif self.strategy_type == 'vol':
             # Define indices and time range
             indices = ["^GSPC", "^STOXX50E"]
-            start_date = (t - self.s).strftime("%Y-%m-%d")
-            end_date = t.strftime("%Y-%m-%d")
+            start_date = (t).strftime("%Y-%m-%d") #- timedelta(1)
+            end_date = (t).strftime("%Y-%m-%d")
             percentage_spot = self.percentage_spot
 
             # Initialize the information set
             information_set = {
-                "expected_return": [],
                 "implied_vols": {},
                 "spot_prices": {},
                 "companies": indices,
             }
-
+            
+        
             for index in indices:
-                try:
+                
+               # try:
                     # Fetch data
-                    index_data = get_index_data_vol(index, start_date, end_date, percentage_spot, base_url)
+                index_data = get_index_data_vol(index, start_date,end_date, percentage_spot, base_url)
+                
+                if index_data is not None and not index_data.empty:
                     
-                    if index_data is not None and not index_data.empty:
-                        # Extract the most recent data
-                        latest_data = index_data.iloc[-1]
-                        spot_price = latest_data.get("Close", np.nan)
-                        implied_vol = latest_data.get("Percentage Spot selected vol for the close", np.nan)
-
-                        if pd.notna(spot_price) and pd.notna(implied_vol):
-                            information_set["expected_return"].append(spot_price)  # Placeholder for expected return
-                            information_set["implied_vols"][index] = implied_vol
-                            information_set["spot_prices"][index] = spot_price
-                        else:
-                            logging.warning(f"Incomplete data for {index} on {end_date}. Skipping.")
-                            information_set["expected_return"].append(0)  # Fallback to zero return
+                    # Extract the most recent data
+                    latest_data = index_data.iloc[-1]
+                    spot_price = latest_data.get("Close", np.nan)
+                    implied_vol = latest_data.get("Percentage Spot selected vol for the close", np.nan)
+                    if np.isnan(implied_vol)==False:
+                        
+                        information_set["implied_vols"][index] = float(implied_vol)
+                    else: 
+                        information_set["implied_vols"][index] = 0.0
+                    if np.isnan(spot_price)==False:
+                        
+                        information_set["spot_prices"][index] = float(spot_price)
                     else:
-                        logging.warning(f"No data returned for {index} in the specified range.")
-                        information_set["expected_return"].append(0)  # Default to zero
-                except Exception as e:
-                    logging.error(f"Error fetching data for {index}: {e}")
-                    information_set["expected_return"].append(0)  # Default to zero return
-                    continue
+                        information_set["spot_prices"][index] = 0.0
+                    
+                    #information_set["expected_return"].append(spot_price)  # Placeholder for expected return
+                    
+                        
+                        
+                        #else:
+                        #    logging.warning(f"Incomplete data for {index} on {end_date}. Skipping.")
+                        #    information_set["expected_return"].append(0)  # Fallback to zero return
+                    #else:
+                    #    logging.warning(f"No data returned for {index} in the specified range.")
+                    #    information_set["expected_return"].append(0)  # Default to zero
+                #except Exception as e:
+                #    logging.error(f"Error fetching data for {index}: {e}")
+                #    information_set["expected_return"].append(0)  # Default to zero return
+                #    continue
 
-            # Final validation of the information set
-            if not information_set["expected_return"]:
-                logging.error("Expected return data is empty. Returning an empty information set.")
-                information_set["expected_return"] = [0] * len(indices)
-
+            print("information set in compute_information for vol strat: ",information_set)
             return information_set
-        except Exception as e:
-            logging.error(f"Error in compute_information: {e}")
-            return {
-                "expected_return": [],
-                "implied_vols": {},
-                "spot_prices": {},
-                "companies": [],
-            }
 
+    
+####To correct later:
 class ShortSkew(Information):
     previous_short_index: str = None  # Tracks the currently shorted index
     previous_position: dict = None  # Tracks the previous portfolio allocation
 
     def compute_portfolio(self, t: datetime, information_set):
         """
-        Constructs the portfolio by shorting a 1-month 90% put option 
+        I need to readjust the vol part ç!!! Constructs the portfolio by shorting a 1-month 90% put option 
         on the index with the smallest realized volatility over the past 20 days.
         """
         try:
@@ -635,10 +740,12 @@ class ShortSkew(Information):
             put_option_price = Information.black_scholes(
                 spot_price, strike_price, time_to_expiry, risk_free_rate, implied_vol, option_type='put'
             )
+            print("The price of our put option is :",put_option_price)
 
             # Close the previous short position and reallocate
             portfolio = {company: 0 for company in information_set['companies']}
             portfolio[best_index] = -put_option_price  # Short position
+            print("Our portfolio :",portfolio)
 
             # Store the current position
             self.previous_position = portfolio
@@ -656,6 +763,7 @@ class ShortSkew(Information):
                 raise ValueError("ShortSkew strategy is only valid for 'vol' strategy type.")
             
             indices = ["^GSPC", "^STOXX50E"]
+            
             start_date = (t - timedelta(days=20)).strftime('%Y-%m-%d')  # Look back 20 days
             end_date = t.strftime('%Y-%m-%d')
             percentage_spot = self.percentage_spot
@@ -670,7 +778,7 @@ class ShortSkew(Information):
             for index in indices:
                 try:
                     # Fetch historical data
-                    index_data = get_index_data_vol(index, start_date, end_date, percentage_spot, base_url)
+                    index_data = get_index_data_vol(index, start_date,end_date, percentage_spot, base_url)
                     if index_data is not None and not index_data.empty:
                         # Compute realized volatility over the past 20 days
                         log_returns = np.log(index_data['Close']).diff().dropna()
