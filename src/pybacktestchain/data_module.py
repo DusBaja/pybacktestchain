@@ -87,7 +87,6 @@ def get_data_api(date, name, base_url):
     logging.error(f"Failed to fetch data for {name} on {date} after {3} retries.")
     return pd.DataFrame()
     
-    
 def get_volatility_from_api(date, index_name, base_url):
     """ Fetch volatility surface data from the Flask API and return it as a DataFrame """
     return get_data_api(date, index_name, base_url)
@@ -144,7 +143,7 @@ def get_stocks_data(tickers, start_date, end_date):
     data = pd.concat(dfs)
     return data
 
-# function that retrieves historical data on prices and ATM implied for a given index
+# function that retrieves historical data on prices and implied for a given index
 def get_volatility(vol_surface_df, index_price, percentage_spot):
     """
     Get the volatility for a given index price percentage by interpolating between the closest strikes.
@@ -276,7 +275,7 @@ def get_index_data_vols(tickers,start_date,end_date, percentage_spot=1, base_url
     for ticker in tickers: 
         try:
             index = yf.Ticker(ticker)
-            data = index.history(start=start_date, end=end_date, auto_adjust=False, actions=False)
+            data = index.history(start=start_date, end=end_date  , auto_adjust=False, actions=False)
             
             df = pd.DataFrame(data)
             df['ticker'] = ticker
@@ -298,6 +297,7 @@ def get_index_data_vols(tickers,start_date,end_date, percentage_spot=1, base_url
                     df.loc[df['Date'] == date, 'Percentage Spot selected vol for the close'] = np.nan
 
                 logging.info(f"Columns from the vol surface for {date_str}: {vol_surface_df}")
+            #print("Our data",df)
             if not df.empty:
                 dfs.append(df)
         except:
@@ -423,22 +423,29 @@ class Information:
     def get_prices(self, t : datetime,strategy_type: str):
         # gets the prices at which the portfolio will be rebalanced at time t 
         data = self.slice_data(t)
-        
+        if strategy_type == "cash":
         # get the last price for each company
-        prices = data.groupby(self.company_column)[self.adj_close_column].last()
-        if strategy_type =="vol":
-            for index in ["^GSPC", "^STOXX50E"]:
-                if index in prices:
-                    index_data = data[data[self.company_column] == index]
-                    spot_price = index_data[self.adj_close_column].iloc[-1]
-                    implied_vol = index_data[self.vol_column].iloc[-1] if self.vol_column in index_data else None
-                    if implied_vol is not None:
-                        T = 21/365  # We assume 1 month exp
-                        r = 0.0315  
-                        sigma = implied_vol
-                        K = spot_price * self.percentage_spot  
-                        option_price = self.black_scholes(spot_price, K, T, r, sigma, option_type=self.option_type)
-                        prices[index] = option_price     
+            prices = data.groupby(self.company_column)[self.adj_close_column].last()
+        elif strategy_type =="vol":        
+            data = data.groupby(self.company_column).agg({self.adj_close_column: 'last',self.vol_column:'last'})   
+            #spot_price = data.groupby(self.company_column)[self.adj_close_column].last()
+            #implied_vol = data.groupby(self.company_column)[self.vol_column].last() if self.vol_column in data.columns.to_list() else None
+            Price_option =[]
+            Cost_heging =[]
+            
+            for idx in range(len(data)):
+                T = 21/365  # We assume 1 month exp
+                r = 0.0315  
+                K = data[self.adj_close_column].iloc[idx] * self.percentage_spot  
+                option_price = self.black_scholes(data[self.adj_close_column].iloc[idx], K, T, r, data[self.vol_column].iloc[idx], option_type=self.option_type)
+                delta = self.compute_delta(data[self.adj_close_column].iloc[idx], K, T, r, data[self.vol_column].iloc[idx], self.option_type)
+                cost_delta_hedging = -delta*data[self.adj_close_column].iloc[idx]
+                Price_option.append(option_price)
+                Cost_heging.append(cost_delta_hedging)
+            prices= data.groupby(self.company_column).agg({self.adj_close_column: 'last',self.vol_column:'last'})                   
+            prices["Price Option"]=Price_option
+            prices["Cost Hedging"]=Cost_heging
+            prices.reset_index(inplace=True)#to get the index information !!   
         prices = prices.to_dict()
         return prices
 
@@ -448,8 +455,7 @@ class Information:
     def compute_portfolio(self, t : datetime,  information_set : dict):
         pass
 
-       
-        
+             
 @dataclass
 class FirstTwoMoments(Information):
     def compute_portfolio(self, t:datetime, information_set):
@@ -570,20 +576,20 @@ class Momentum(Information):
 
         elif self.strategy_type == 'vol':
             indices = ["^GSPC", "^STOXX50E"]
-            implied = information_set.get("implied_vols", [])
+            implied = information_set.get("expected_return_implied_vol", [])
             companies = information_set.get("companies", [])
             
             if  len(companies) == 0 or len(implied) == 0:
                 logging.warning("No valid indices found. Returning empty portfolio.")
                 return {}  # Empty portfolio fallback for vol strategy
 
-            # Map highest implied to indices
-            implieds = {
-                idx: implied[idx]
-                for idx in companies if idx in indices and idx in implied
-            }
-            best_performer = max(implieds, key=implieds.get)
-
+            # Map highest implied expected return to indices
+            
+            highest_implied_vol_index = np.argmax(implied)
+            index_with_highest_vol = companies[highest_implied_vol_index]
+                
+            best_performer = index_with_highest_vol
+            
             # Check if we need to switch positions
             if best_performer == self.previous_best_performer:
                 return self.previous_position
@@ -592,25 +598,25 @@ class Momentum(Information):
             self.previous_best_performer = best_performer
 
             # Get the spot price and implied volatility
-            spot_price = information_set["spot_prices"].get(best_performer, 0)
-            implied_vol = information_set["implied_vols"].get(best_performer, None)
+            #spot_price = information_set["spot_prices"].get(best_performer, 0)
+            #implied_vol = information_set["implied_vols"].get(best_performer, None)
 
-            strike_price = spot_price * 1.05  # Going long 105% call option for the best performer
-            time_to_expiry = 21 / 365  # 1 month to expiry
-            risk_free_rate = 0.0315  # Assuming 3.15% annualized rate
+            #strike_price = spot_price * 1.05  # Going long 105% call option for the best performer
+            #time_to_expiry = 21 / 365  # 1 month to expiry
+            #risk_free_rate = 0.0315  # Assuming 3.15% annualized rate
 
-            if implied_vol is None or spot_price <= 0:
-                logging.warning("Invalid spot price or implied volatility. Returning empty portfolio.")
-                return {company: 0 for company in companies}
+            #if implied_vol is None or spot_price <= 0:
+            #    logging.warning("Invalid spot price or implied volatility. Returning empty portfolio.")
+            #    return {company: 0 for company in companies}
             
-            call_option_price = Information.black_scholes(
-                spot_price, strike_price, time_to_expiry, risk_free_rate, implied_vol, option_type='call'
-            )
+            #call_option_price = Information.black_scholes(
+            #    spot_price, strike_price, time_to_expiry, risk_free_rate, implied_vol, option_type='call'
+            #)
 
             # Allocate 100% to the best performer
             portfolio = {company: 0 for company in companies}
-            portfolio[best_performer] = call_option_price
-
+            portfolio[best_performer] = 1#call_option_price
+            
             # Store the current position
             self.previous_position = portfolio
 
@@ -628,6 +634,7 @@ class Momentum(Information):
         if self.strategy_type == 'cash':           
             # sort data by ticker and date
             data = data.sort_values(by=[self.company_column, self.time_column])
+            
             data['return'] =  data.groupby(self.company_column)[self.adj_close_column].pct_change()
             
             # expected return by company 
@@ -637,44 +644,59 @@ class Momentum(Information):
                     "expected_return": expected_return,
                     "companies": companies,
                 }
+            
             return information_set
         elif self.strategy_type == 'vol':
-            # Define indices and time range
-            indices = ["^GSPC", "^STOXX50E"]
-            start_date = (t).strftime("%Y-%m-%d") #- timedelta(1)
-            end_date = (t).strftime("%Y-%m-%d")
-            percentage_spot = self.percentage_spot
-
-            # Initialize the information set
+            '''For the momentum strategy applied to vol, we will take 
+            as position the underlying whose implied has the highest expect return (increase)'''
             information_set = {
-                "implied_vols": {},
-                "spot_prices": {},
-                "companies": indices,
+                #"implied_vols": {},
+                #"spot_prices": {},
+                #"companies": indices,
             }
+            # Define indices and time range
+            #indices = ["^GSPC", "^STOXX50E"]
+            
+            data = data.sort_values(by=[self.company_column, self.time_column])
+            data['return'] =  data.groupby(self.company_column)[self.vol_column].pct_change()
+            # expected return by company 
+            expected_return = data.groupby(self.company_column)['return'].mean().to_numpy()            
+            companies = data[self.company_column].unique()
+            information_set = {
+                    "expected_return_implied_vol": expected_return,
+                    "companies": companies,
+                }
+            
+            #start_date = (t).strftime("%Y-%m-%d") #- timedelta(1)
+            #end_date = (t).strftime("%Y-%m-%d")
+            #percentage_spot = self.percentage_spot
+
+            
+            
             
         
-            for index in indices:
+            #for index in indices:
                 
                # try:
                     # Fetch data
-                index_data = get_index_data_vol(index, start_date,end_date, percentage_spot, base_url)
+                #index_data = get_index_data_vol(index, start_date,end_date, percentage_spot, base_url)
                 
-                if index_data is not None and not index_data.empty:
+                #if index_data is not None and not index_data.empty:
                     
                     # Extract the most recent data
-                    latest_data = index_data.iloc[-1]
-                    spot_price = latest_data.get("Close", np.nan)
-                    implied_vol = latest_data.get("Percentage Spot selected vol for the close", np.nan)
-                    if np.isnan(implied_vol)==False:
+                #    latest_data = index_data.iloc[-1]
+                #    spot_price = latest_data.get("Close", np.nan)
+                #    implied_vol = latest_data.get("Percentage Spot selected vol for the close", np.nan)
+                #    if np.isnan(implied_vol)==False:
                         
-                        information_set["implied_vols"][index] = float(implied_vol)
-                    else: 
-                        information_set["implied_vols"][index] = 0.0
-                    if np.isnan(spot_price)==False:
+                #        information_set["implied_vols"][index] = float(implied_vol)
+                #    else: 
+                #        information_set["implied_vols"][index] = 0.0
+                #    if np.isnan(spot_price)==False:
                         
-                        information_set["spot_prices"][index] = float(spot_price)
-                    else:
-                        information_set["spot_prices"][index] = 0.0
+                #        information_set["spot_prices"][index] = float(spot_price)
+                #    else:
+                #        information_set["spot_prices"][index] = 0.0
                     
                     #information_set["expected_return"].append(spot_price)  # Placeholder for expected return
                     
