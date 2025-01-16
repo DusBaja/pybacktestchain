@@ -103,7 +103,10 @@ class Broker:
                     #if position.position_type == position_type:
                         # Update existing position
                     new_quantity = position.quantity + quantity
-                    new_entry_price = ((position.entry_price * position.quantity) + (price * quantity)) / new_quantity
+                    if new_quantity !=0:
+                        new_entry_price = ((position.entry_price * position.quantity) + (price * quantity)) / new_quantity
+                    else:
+                        new_entry_price =price #the moment we cut the previous level
                     position.quantity = new_quantity
                     position.entry_price = new_entry_price
                     #else:
@@ -141,29 +144,29 @@ class Broker:
             else:
                 if self.verbose:
                     logging.warning(f"No position found for {ticker} ({position_type}).")
-        #####Add short selling on cash strategies 
+        #####No short selling on cash strategies 
         
         else: ##We added the short selling on vol strategies and unique key !
             position_key = (ticker, position_type)
             if position_key in self.positions: 
                 position = self.positions[position_key]
-                print("HERE",position)
+                
                 #if position.position_type == position_type: #and position.quantity >= quantity
-                if position.quantity >= quantity:
+                if position.quantity >= quantity and position.quantity>0:
                     # Update position
                     position.quantity -= quantity #the quantity we order is always positive
                     self.cash += price * quantity
                     if position.quantity == 0:
                         del self.positions[position_key]
                         del self.entry_prices[position_key]
-                    self.log_transaction(date, 'SELL', ticker, quantity, price, position_key[1])
+                    self.log_transaction(date, 'SELL', ticker, -quantity, price, position_key[1])#as we are changing the function get_portfolio
                 else: #we are already short or will be so we need to recompute the entry price 
                     new_quantity=position.quantity -quantity #the quantity we order is always positive
                     new_price = (position.entry_price*abs(position.quantity)+price*quantity)/new_quantity
                     position.quantity = new_quantity
                     position.entry_prices=new_price
                     self.cash += price * quantity
-                    self.log_transaction(date, 'SELL', ticker, quantity, price, position_key[1])
+                    self.log_transaction(date, 'SELL', ticker, -quantity, price, position_key[1])
                         
                 #else: 
                 #    if self.verbose:
@@ -174,9 +177,10 @@ class Broker:
             else: #create a short position
                 # Create a new position
                 if self.verbose:
-                    logging.warning(f"Not enough {position_type} to sell {quantity} of {ticker}. As we are in vol strategy, we are going to short sell")
-                self.positions[position_key] = Position(ticker, -quantity, price, position_type)
-                self.log_transaction(date, 'SELL', ticker, -quantity, price, position_type)
+                    logging.warning(f"No position to sell. As we are in vol strategy, we are going to short sell")
+                self.positions[position_key] = Position(ticker, -quantity, price, position_key[1])
+                self.cash += price * quantity
+                self.log_transaction(date, 'SELL', ticker, -quantity, price, position_key[1])
             self.entry_prices[position_key] = price
                 
 
@@ -213,13 +217,14 @@ class Broker:
             for position_key, position in self.positions.items():
                 if position_key[0] in list(market_prices["ticker"].values()):
                     ticker=position_key[0]
-                    if position.position_type =="Options":
+                    print("Positions",position)
+                    if position_key[1] =="Options":
                         idx = list(market_prices["ticker"].keys())[list(market_prices['ticker'].values()).index(ticker)]        
                         price_option = market_prices["Price Option"][idx]
                         if position.quantity>=0:
                             portfolio_value +=position.quantity*price_option
                         else: #if short
-                            portfolio_value +=position.quantity*(price_option-position.entry_price)
+                            portfolio_value +=position.quantity*(price_option-position.entry_price) #if the current price is lower than the entry, it's positive
                                 
                     else:
                         idx = list(market_prices["ticker"].keys())[list(market_prices['ticker'].values()).index(ticker)]
@@ -361,7 +366,7 @@ class Broker:
                                     
                 quantity_to_trade = int(diff_value / price_option)
                 delta = Cost_heging/spot
-                target_value_hedging = quantity_to_trade*delta*spot
+                target_value_hedging = quantity_to_trade*Cost_heging*weight #weight here is either -1 or 1 and as if we are short, the cost is negative, we need to adjust with the weight for the sign 
                 
                 current_value_hedging = self.positions.get(position_key_share, Position(ticker, 0, 0,"Shares")).quantity * spot
                 diff_value_hedging = target_value_hedging-current_value_hedging
@@ -390,11 +395,12 @@ class Broker:
                 quantity_to_trade = int(diff_value / price_option)
                 delta = Cost_heging/spot
                 print("delta",delta)
-                target_value_hedging = quantity_to_trade*delta*spot
-                print("target_value_hedging",target_value_hedging)
+                target_value_hedging = quantity_to_trade*Cost_heging*weight
+                
                 current_value_hedging = self.positions.get(position_key_share, Position(ticker, 0, 0,"Shares")).quantity * spot
                 diff_value_hedging = target_value_hedging-current_value_hedging
                 quantity_to_trade_for_hedging = int(diff_value_hedging/spot)
+                print("quantity_to_trade_for_hedging",quantity_to_trade_for_hedging)
                 if quantity_to_trade > 0:
                     available_cash = self.get_cash_balance()
                     cost = quantity_to_trade * price_option
@@ -416,6 +422,7 @@ class Broker:
                             logging.warning(f"Not enough cash to buy {quantity_to_trade_for_hedging} shares of {ticker} for delta hedging on {date}. Needed: {Cost_heging}, Available: {available_cash}")
                             logging.info(f"Buying as many shares of {ticker} as possible with available cash.")
                         quantity_to_trade_for_hedging=int(available_cash / spot)
+                        print("quantity_to_trade_for_hedging",quantity_to_trade_for_hedging)
                         self.buy(ticker, quantity_to_trade_for_hedging, spot, date,"Shares","vol")
                         logging.info(f"Delta hedge executed for {ticker} on {date}.")
                     
@@ -516,7 +523,7 @@ class StopLoss(RiskModel):
 class Backtest:
     initial_date: datetime
     final_date: datetime
-    strategy_type: str #= "cash" 
+    strategy_type: str #= "cash"  or "vol"
     universe = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NVDA', 'INTC', 'CSCO', 'NFLX','^GSPC', '^STOXX50E']
     index_universe = ['^GSPC', '^STOXX50E']
     information_class : type  = Information
@@ -737,7 +744,7 @@ class Backtest:
                 #logging.info("Applying risk model.")
                 portfolio = info.compute_portfolio(t, info.compute_information(t,base_url=self.ngrok_url))
                 logging.debug(f"Portfolio at {t}: {portfolio}")
-                prices = info.get_prices(t, self.strategy_type)
+                prices = info.get_prices(t, self.strategy_type,str(type(info).__name__))
                 
                 logging.debug(f"Prices at {t}: {prices}")
                 logging.debug(f"Broker state at {t}: {self.broker}")
@@ -746,16 +753,18 @@ class Backtest:
             if self.rebalance_flag().time_to_rebalance(t):
                 logging.info("-----------------------------------")
                 logging.info(f"Rebalancing portfolio at {t}")
+                
+                logging.info(f"infooormation {type(info).__name__}")
                 information_set = info.compute_information(t,base_url=self.ngrok_url)
                 portfolio = info.compute_portfolio(t, information_set)
-                prices = info.get_prices(t, self.strategy_type)
+                prices = info.get_prices(t, self.strategy_type,str(type(info).__name__))
                 self.broker.execute_portfolio(portfolio, prices, t, self.strategy_type)
 
             
         # Final portfolio value
-        logging.info(f"Backtest completed. Final portfolio value: {self.broker.get_portfolio_value(info.get_prices(self.final_date, self.strategy_type),self.strategy_type)}")
+        logging.info(f"Backtest completed. Final portfolio value: {self.broker.get_portfolio_value(info.get_prices(self.final_date, self.strategy_type,str(type(info).__name__)),self.strategy_type)}")
         df = self.broker.get_transaction_log()
-        logging.info(f"Final P&L: {self.broker.get_portfolio_value(info.get_prices(self.final_date, self.strategy_type),self.strategy_type)- self.initial_cash}")
+        logging.info(f"Final P&L: {self.broker.get_portfolio_value(info.get_prices(self.final_date, self.strategy_type,str(type(info).__name__)),self.strategy_type)- self.initial_cash}")
         # Save the transaction log
         df.to_csv(f"backtests/{self.backtest_name}.csv")
 

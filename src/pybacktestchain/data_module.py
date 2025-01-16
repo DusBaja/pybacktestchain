@@ -323,7 +323,7 @@ class Information:
     time_column: str = 'Date'
     company_column: str = 'ticker'
     adj_close_column: str = 'Close'
-    vol_column: str = 'Percentage Spot selected vol for the close'#'ImpliedVol'
+    vol_column: str = 'Percentage Spot selected vol for the close'# It's the implied vol'ImpliedVol'
     indices: list = None
     option_type: str = 'call'
     percentage_spot: float = 1.0
@@ -420,34 +420,62 @@ class Information:
         else:
             raise ValueError("Invalid option type. Use 'call' or 'put'.")
 
-    def get_prices(self, t : datetime,strategy_type: str):
+    def get_prices(self, t : datetime,strategy_type: str,class_name:str):
         # gets the prices at which the portfolio will be rebalanced at time t 
         data = self.slice_data(t)
+        
         if strategy_type == "cash":
         # get the last price for each company
             prices = data.groupby(self.company_column)[self.adj_close_column].last()
-        elif strategy_type =="vol":        
-            data = data.groupby(self.company_column).agg({self.adj_close_column: 'last',self.vol_column:'last'})   
-            #spot_price = data.groupby(self.company_column)[self.adj_close_column].last()
-            #implied_vol = data.groupby(self.company_column)[self.vol_column].last() if self.vol_column in data.columns.to_list() else None
-            Price_option =[]
-            Cost_heging =[]
+        elif strategy_type =="vol":   
+            if class_name == "Momentum":     
+                data = data.groupby(self.company_column).agg({self.adj_close_column: 'last',self.vol_column:'last'})   
+                #spot_price = data.groupby(self.company_column)[self.adj_close_column].last()
+                #implied_vol = data.groupby(self.company_column)[self.vol_column].last() if self.vol_column in data.columns.to_list() else None
+                Price_option =[]
+                Cost_heging =[]
+                
+                for idx in range(len(data)):
+                    T = 21/365  # We assume 1 month exp
+                    r = 0.0315
+                    self.percentage_spot=1.05
+                    self.option_type="Call"  
+                    K = data[self.adj_close_column].iloc[idx] * self.percentage_spot  
+                    option_price = self.black_scholes(data[self.adj_close_column].iloc[idx], K, T, r, data[self.vol_column].iloc[idx], option_type=self.option_type)
+                    delta = self.compute_delta(data[self.adj_close_column].iloc[idx], K, T, r, data[self.vol_column].iloc[idx], self.option_type)
+                    cost_delta_hedging = -delta*data[self.adj_close_column].iloc[idx]
+                    Price_option.append(option_price)
+                    Cost_heging.append(cost_delta_hedging)
+                prices= data.groupby(self.company_column).agg({self.adj_close_column: 'last',self.vol_column:'last'})                   
+                prices["Price Option"]=Price_option
+                prices["Cost Hedging"]=Cost_heging
+                prices.reset_index(inplace=True)#to get the index information !!   
+            elif class_name == "ShortSkew":
+                data = data.groupby(self.company_column).agg({self.adj_close_column: 'last',self.vol_column:'last'})   
+                Price_option =[]
+                Cost_heging =[]
+                
+                for idx in range(len(data)):
+                    T = 21/365  # We assume 1 month exp
+                    r = 0.0315
+                    
+                    self.percentage_spot=0.95
+                    self.option_type="Put"  
+                    K = data[self.adj_close_column].iloc[idx] * self.percentage_spot  
+                    option_price = self.black_scholes(data[self.adj_close_column].iloc[idx], K, T, r, data[self.vol_column].iloc[idx], option_type=self.option_type)
+                    delta = self.compute_delta(data[self.adj_close_column].iloc[idx], K, T, r, data[self.vol_column].iloc[idx], self.option_type)
+                    cost_delta_hedging = delta*data[self.adj_close_column].iloc[idx]
+                    Price_option.append(option_price)
+                    Cost_heging.append(cost_delta_hedging)
+                prices= data.groupby(self.company_column).agg({self.adj_close_column: 'last',self.vol_column:'last'})                   
+                prices["Price Option"]=Price_option
+                prices["Cost Hedging"]=Cost_heging
+                prices.reset_index(inplace=True)#to
+
+
             
-            for idx in range(len(data)):
-                T = 21/365  # We assume 1 month exp
-                r = 0.0315  
-                K = data[self.adj_close_column].iloc[idx] * self.percentage_spot  
-                option_price = self.black_scholes(data[self.adj_close_column].iloc[idx], K, T, r, data[self.vol_column].iloc[idx], option_type=self.option_type)
-                delta = self.compute_delta(data[self.adj_close_column].iloc[idx], K, T, r, data[self.vol_column].iloc[idx], self.option_type)
-                cost_delta_hedging = -delta*data[self.adj_close_column].iloc[idx]
-                Price_option.append(option_price)
-                Cost_heging.append(cost_delta_hedging)
-            prices= data.groupby(self.company_column).agg({self.adj_close_column: 'last',self.vol_column:'last'})                   
-            prices["Price Option"]=Price_option
-            prices["Cost Hedging"]=Cost_heging
-            prices.reset_index(inplace=True)#to get the index information !!   
-        prices = prices.to_dict()
-        return prices
+            prices = prices.to_dict()
+            return prices
 
     def compute_information(self, t : datetime):  
         pass
@@ -524,21 +552,13 @@ class FirstTwoMoments(Information):
                 information_set['covariance_matrix'] = covariance_matrix
                 information_set['companies'] = data.columns.to_numpy()
             elif self.strategy_type == 'vol':
-                ########@ to be redefined 
-                information_set['expected_return'] = np.zeros(len(data[self.company_column].unique()))  # Placeholder
-                information_set['covariance_matrix'] = np.zeros((len(data[self.company_column].unique()), len(data[self.company_column].unique())))  # Placeholder
-                information_set['companies'] = data[self.company_column].unique()
+                logging.error(f"There is no vol strategy with the FirstTwoMoments")
             #### end of the modifications 
             ############################
             return information_set
         except Exception as e:
             logging.error(f"Error computing information: {e}")
-            return {
-            "expected_return": {},
-            "realized_vols": {},
-            "implied_vols": {},
-            "spot_prices": {}
-            }
+            return {}
 
 class Momentum(Information):
     previous_best_performer: str = None  # Tracks the last best performer
@@ -575,7 +595,7 @@ class Momentum(Information):
             return portfolio
 
         elif self.strategy_type == 'vol':
-            indices = ["^GSPC", "^STOXX50E"]
+            
             implied = information_set.get("expected_return_implied_vol", [])
             companies = information_set.get("companies", [])
             
@@ -583,7 +603,7 @@ class Momentum(Information):
                 logging.warning("No valid indices found. Returning empty portfolio.")
                 return {}  # Empty portfolio fallback for vol strategy
 
-            # Map highest implied expected return to indices
+            # Map highest implied to indices
             
             highest_implied_vol_index = np.argmax(implied)
             index_with_highest_vol = companies[highest_implied_vol_index]
@@ -615,7 +635,7 @@ class Momentum(Information):
 
             # Allocate 100% to the best performer
             portfolio = {company: 0 for company in companies}
-            portfolio[best_performer] = 1#call_option_price
+            portfolio[best_performer] = 1
             
             # Store the current position
             self.previous_position = portfolio
@@ -719,113 +739,98 @@ class Momentum(Information):
     
 ####To correct later:
 class ShortSkew(Information):
-    previous_short_index: str = None  # Tracks the currently shorted index
+    previous_best_performer: str = None  # Tracks the currently shorted index
     previous_position: dict = None  # Tracks the previous portfolio allocation
 
     def compute_portfolio(self, t: datetime, information_set):
         """
-        I need to readjust the vol part ç!!! Constructs the portfolio by shorting a 1-month 90% put option 
+        I need to readjust the vol part !!! Constructs the portfolio by shorting a 1-month 90% put option 
         on the index with the smallest realized volatility over the past 20 days.
         """
-        try:
-            if self.strategy_type != 'vol':
-                raise ValueError("ShortSkew strategy is only valid for 'vol' strategy type.")
-            
-            # Identify the index with the smallest 20-day realized volatility
-            realized_vols = information_set['realized_vols']
-            if not realized_vols:
-                raise ValueError("Realized volatility data is missing from the information set.")
-            
-            best_index = min(realized_vols, key=realized_vols.get)
+    
+        if self.strategy_type != 'vol':
+            raise ValueError("ShortSkew strategy is only valid for 'vol' strategy type.")
+        
+        # Identify the index with the smallest 20-day realized volatility
+        realized_vols = information_set.get("realized_vols",[])
+        companies = information_set.get("companies",[])
+        
+        if  len(companies) == 0 or len(realized_vols) == 0:
+                logging.warning("No valid indices found. Returning empty portfolio.")
+                return {}  # Empty portfolio fallback for vol strategy
+        # If both realized volatilities are 0, select the first one
+        if np.all(realized_vols == 0):  # Check if all values are 0
+            logging.warning("Both realized volatilities are 0. Defaulting to the first index.")
+            smallest_realized_vol = 0  # Default to the first index
+        else:
+            smallest_realized_vol = np.argmin(realized_vols)
+        
+        index_with_the_smallest_realized = companies[smallest_realized_vol]
+        best_performer = index_with_the_smallest_realized
 
-            # Check if the best index has changed
-            if best_index == self.previous_short_index:
+        if best_performer == self.previous_best_performer:
                 # If the index hasn't changed, retain the previous position
                 return self.previous_position
+        #update the position
+        self.previous_best_performer = best_performer
 
-            # Update the shorted index
-            self.previous_short_index = best_index
+        # Get spot price and implied volatility for the best index
+        #spot_price = information_set['spot_prices'][best_index]
+        #implied_vol = information_set['implied_vols'][best_index]
 
-            # Get spot price and implied volatility for the best index
-            spot_price = information_set['spot_prices'][best_index]
-            implied_vol = information_set['implied_vols'][best_index]
+        # Define option parameters
+        #strike_price = spot_price * 0.9  # 90% put option
+        #time_to_expiry = 21 / 365  # 1 month to expiry
+        #risk_free_rate = 0.0315  # Assuming 3.15% annualized rate
 
-            # Define option parameters
-            strike_price = spot_price * 0.9  # 90% put option
-            time_to_expiry = 21 / 365  # 1 month to expiry
-            risk_free_rate = 0.0315  # Assuming 3.15% annualized rate
+        #if implied_vol is None or spot_price <= 0:
+        #    raise ValueError("Invalid spot price or implied volatility for the selected index.")
 
-            if implied_vol is None or spot_price <= 0:
-                raise ValueError("Invalid spot price or implied volatility for the selected index.")
+        # Compute the put option price using Black-Scholes
+        #put_option_price = Information.black_scholes(
+        #    spot_price, strike_price, time_to_expiry, risk_free_rate, implied_vol, option_type='put'
+        #)
+        #print("The price of our put option is :",put_option_price)
 
-            # Compute the put option price using Black-Scholes
-            put_option_price = Information.black_scholes(
-                spot_price, strike_price, time_to_expiry, risk_free_rate, implied_vol, option_type='put'
-            )
-            print("The price of our put option is :",put_option_price)
+        # Short 100% on the best performer 
+        portfolio = {company: 0 for company in companies}
+        portfolio[best_performer] = -1  # Short position
+        print("Our portfolio :",portfolio)
 
-            # Close the previous short position and reallocate
-            portfolio = {company: 0 for company in information_set['companies']}
-            portfolio[best_index] = -put_option_price  # Short position
-            print("Our portfolio :",portfolio)
+        # Store the current position
+        self.previous_position = portfolio
 
-            # Store the current position
-            self.previous_position = portfolio
-
-            return portfolio
-        except Exception as e:
-            logging.error(f"Error in compute_portfolio: {e}")
-            return {index: 0 for index in self.indices}
+        return portfolio
+        
     def compute_information(self, t: datetime, base_url=None):
         """
         Prepares the information set required for portfolio construction.
         """
-        try:
-            if self.strategy_type != 'vol':
-                raise ValueError("ShortSkew strategy is only valid for 'vol' strategy type.")
-            
-            indices = ["^GSPC", "^STOXX50E"]
-            
-            start_date = (t - timedelta(days=20)).strftime('%Y-%m-%d')  # Look back 20 days
-            end_date = t.strftime('%Y-%m-%d')
-            percentage_spot = self.percentage_spot
+        data =self.slice_data(t)
+        information_set = {}
+        
+        if self.strategy_type != 'vol':
+            raise ValueError("ShortSkew strategy is only valid for 'vol' strategy type.")
+        
+        data = data.sort_values(by=[self.company_column, self.time_column])
+        data['log_return'] =  np.log(data[self.adj_close_column] / data[self.adj_close_column].shift(1))
+        data['realized_vol_10d'] = (data.groupby(self.company_column)['log_return'].rolling(window=10)).std().reset_index(level=0, drop=True)
+        # Handle NaN values by replacing them with 0 (e.g., for the first few rows where there are insufficient data points)
+        data['realized_vol_10d'] = data['realized_vol_10d'].fillna(0)
+        data['realized_vol_10d'] = data['realized_vol_10d']*16 #the squared part of 252 to annulize our 10 Rvol 
+        data.drop(columns=['log_return'], inplace=True)
+        realized_vol = data.groupby(self.company_column)['realized_vol_10d'].last().to_numpy()
+        companies = data[self.company_column].unique()
+        implied_vol=data.groupby(self.company_column)[self.vol_column].last()
 
-            information_set = {
-                'realized_vols': {},  # To store realized volatilities
-                'implied_vols': {},
-                'spot_prices': {},
-                'companies': indices,
-            }
-
-            for index in indices:
-                try:
-                    # Fetch historical data
-                    index_data = get_index_data_vol(index, start_date,end_date, percentage_spot, base_url)
-                    if index_data is not None and not index_data.empty:
-                        # Compute realized volatility over the past 20 days
-                        log_returns = np.log(index_data['Close']).diff().dropna()
-                        realized_vol = log_returns.std() * np.sqrt(252)  # Annualize the volatility
-                        information_set['realized_vols'][index] = realized_vol
-
-                        # Extract the most recent implied volatility and spot price
-                        latest_data = index_data.iloc[-1]
-                        spot_price = latest_data['Close']
-                        implied_vol = latest_data['Percentage Spot selected vol for the close']
-
-                        information_set['implied_vols'][index] = implied_vol
-                        information_set['spot_prices'][index] = spot_price
-                    else:
-                        logging.warning(f"No data returned for index {index}.")
-                except Exception as e:
-                    logging.warning(f"Error fetching data for index {index}: {e}")
-
-            return information_set
-        except Exception as e:
-            logging.error(f"Error computing information: {e}")
-            return {
-                "expected_return": {},
-                "realized_vols": {},
-                "implied_vols": {},
-                "spot_prices": {}
-            }
+        
+        information_set = {
+            'realized_vols': realized_vol,  # To store realized volatilities
+            'implied_vols': implied_vol,
+           
+            'companies': companies,
+        }
+        print("information set in compute_information for vol strat in ShortSkew: ",information_set)
+        return information_set
+        
 
