@@ -64,7 +64,29 @@ class Broker:
             self.entry_prices = {}
 
     def buy(self, ticker: str, quantity: int, price: float, date: datetime, position_type: str,strategy_type:str):
-        """Executes a buy order for the specified ticker (Shares or Options)."""
+        """Executes a buy order for the specified ticker (Shares or Options).
+        Args:
+            ticker (str): The ticker symbol of the asset being bought (e.g., "AAPL" for Apple shares or "^GSPC" for SPX index).
+            quantity (int): The number of units being bought (e.g., shares or options).
+            price (float): The price at which the asset is bought.
+            date (datetime): The date of the transaction.
+            position_type (str): The type of position, such as "Shares" or "Options".
+            strategy_type (str): The strategy being applied for the trade, such as "volatility", "momentum", or "mean_reversion".
+        
+        Returns:
+            None: The function does not explicitly return a value but performs the following:
+                - Logs the transaction details (e.g., date, type, ticker, quantity, price, position_type).
+                - Updates or creates a new position in the portfolio based on the ticker and position type.
+                - For "cash" strategy, positions are keyed by the ticker symbol.
+                - For "vol" strategy, positions are keyed uniquely by (ticker, position_type).
+                - Logs warnings if there is insufficient cash or if position types conflict.
+                - Updates the `entry_prices` dictionary with the new entry price for the position.
+
+        Notes:
+                - This method handles two distinct strategies ("cash" and "vol"), each using different logic for managing positions.
+                - Ensures that mixed position types (e.g., "Shares" and "Options") are handled appropriately by creating new positions.
+
+        """
         if strategy_type=="cash" :#same logic but actually the key needs to be different !
             total_cost = price * quantity
             if self.cash >= total_cost:
@@ -123,7 +145,36 @@ class Broker:
                     logging.warning(f"Not enough cash to buy {quantity} {position_type} of {ticker} at {price}. Available cash: {self.cash}")
 
     def sell(self, ticker: str, quantity: int, price: float, date: datetime, position_type: str,strategy_type: str):
-        """Executes a sell order for the specified ticker (Shares or Options)."""
+        """Executes a sell order for the specified ticker (Shares or Options).
+        Args:
+        
+            ticker (str): The ticker symbol of the asset being sold (e.g., "AAPL" for Apple shares or "^GSPC" for SPX index).
+            quantity (int): The number of units being sold. We only pass positive values here.
+            price (float): The price at which the asset is being sold.
+            date (datetime): The date of the transaction.
+            position_type (str): The type of position being sold, such as "Shares" or "Options".
+            strategy_type (str): The strategy being applied for the trade, such as "cash" or "vol".
+                - "cash": Traditional strategy without short selling. Positions must exist to be sold.
+                - "vol": Volatility strategy that allows short selling if sufficient cash is available.
+        Returns:
+        None: The function modifies the portfolio state as follows:
+            - For "cash" strategy:
+                - Decreases the position's quantity by the amount sold.
+                - Adds the sale proceeds to the cash balance.
+                - Deletes the position if the quantity reaches zero.
+                - Logs warnings if there is an attempt to sell more than the existing quantity or sell a nonexistent position.
+            - For "vol" strategy:
+                - Handles short selling if the cash position can cover it.
+                - Updates position quantity and entry price based on short selling logic.
+                - Executes partial sales or partial short sales if there is insufficient cash to cover it.
+                - Creates new short positions if no position exists for the ticker and if the cash amount allow it (We want to be able as in a bank to rebuy the position in case of a brutal movement).
+                - Logs warnings for cases where short selling is constrained by insufficient cash or other restrictions: not executed in that case, or partially executed.
+        Notes:
+            - For "cash" strategy, short selling is not allowed.
+            - For "vol" strategy, positions are uniquely identified by `(ticker, position_type)` to insure that positions lock shares AND options separately.
+            - Ensure that all transactions respect the cash constraints and position limits.
+            - Partial execution of short selling is supported in scenarios where full execution is not feasible (not enough cash to justify such position: avoiding getting short 22 billions if the initial cash is 1m).
+        """
         if strategy_type=="cash":
             if ticker in self.positions:
                 position = self.positions[ticker]
@@ -201,11 +252,7 @@ class Broker:
                     if self.verbose:
                         logging.warning(
                             f"Not enough {position_type} to sell {quantity} of {ticker}: the cash position doesn't cover it ")                        
-                #else: 
-                #    if self.verbose:
-                #        logging.warning(f"Cannot mix positions of different types for {ticker} ({position.position_type} vs {position_type}).Creating a short selling position.")
-                #    self.positions[ticker] = Position(ticker, -quantity, price, position_type)
-                #    self.log_transaction(date, 'SELL', ticker, -quantity, price, position_type)
+    
                 
             else: #create a short position
                 # Create a new position
@@ -225,8 +272,25 @@ class Broker:
                     self.cash += price * partial_short_position
                     self.log_transaction(date, 'SELL', ticker, -partial_short_position, price, position_key[1])
                     self.entry_prices[position_key] = price
-    def log_transaction(self, date, action, ticker, quantity, price,position_type="shares"):
-        """Logs the transaction."""
+    
+    def log_transaction(self, date, action, ticker, quantity, price,position_type):
+        """Logs the transaction.
+        Args:
+            date (datetime): When the transaction occurred.
+            action (str): The type of transaction performed, such as "BUY" or "SELL".
+            ticker (str): The ticker symbol of the asset involved in the transaction 
+                        (e.g., "AAPL" for Apple shares or "^GSPC" for SPX index).
+            quantity (int): The number of units involved in the transaction.
+                            - Positive for buying or increasing a position.
+                            - Negative for selling or reducing a position.
+            price (float): The price per unit at which the transaction was executed.
+            position_type (str): The type of position, such as "Shares" or "Options". 
+                                       
+
+        Returns:
+            None: This method updates the portfolio's transaction history by appending the 
+                transaction details to our block of transactions (saved in the blockchain)
+              """
         transaction = pd.DataFrame([{
             'Date': date,
             'Action': action,
@@ -248,7 +312,28 @@ class Broker:
         return self.transaction_log
 
     def get_portfolio_value(self, market_prices: dict,strategy_type:str):
-        """Calculates the total portfolio value based on the current market prices."""
+        """Calculates the total portfolio value based on the current market prices.
+        
+        Args:
+        market_prices (dict): A dictionary containing the current market prices of assets.
+        strategy_type (str): The strategy being used, either "cash" or "vol".
+                             - "cash": positions are keyed by ticker.
+                             - "vol": positions are keyed by (ticker, position_type).
+
+        Returns:
+            float: The total portfolio value, which takes into account:
+                - Cash balance.
+                - Market value of all positions (shares or options).
+                - For short positions, the valuation accounts for current market prices (as the Cash already take into account the "entry price").
+
+        Notes:
+            - For the "cash" strategy:
+                - Iterates over positions keyed by ticker.
+                - Values are directly multiplied by the current market price.
+            - For the "vol" strategy:
+                - Calculates the value of shares and options separately: different information needed.
+
+        """
         portfolio_value = self.cash
         if strategy_type == "cash":
             for ticker, position in self.positions.items():
@@ -256,7 +341,7 @@ class Broker:
         else:
             #position_key = (ticker, position_type)
             for position_key, position in self.positions.items():
-                print("position_key in the get_portfolio_value",position_key)
+                
                 if position_key[0] in list(market_prices["ticker"].values()):
                     ticker=position_key[0]
                     
@@ -265,94 +350,61 @@ class Broker:
                         price_option = market_prices["Price Option"][idx]
                         if position.quantity>=0:
                             portfolio_value +=position.quantity*(price_option)#price_option  -position.entry_price
-                            print("For ",position_key, "normally options")
-                            print("With a position: ",position)
-                            print("position.quantity",position.quantity)
-                            print("Current price",price_option, " and the previous entry was ", position.entry_price)
-                            print("position.quantity*(price_option-position.entry_price)",position.quantity*(price_option-position.entry_price)) 
+
                         else: #if short
                             portfolio_value +=position.quantity*(price_option) #-position.entry_price   if the current price is lower than the entry, it's positive
-                            print("For ",position_key, "normally options")
-                            print("With a position: ",position)
-                            print("position.quantity",position.quantity, "negative normally")
-                            print("Current price",price_option, " and the previous entry was ", position.entry_price)
-                            print("position.quantity*(price_option-position.entry_price)",position.quantity*(price_option-position.entry_price))    
+  
                     else:
                         idx = list(market_prices["ticker"].keys())[list(market_prices['ticker'].values()).index(ticker)]
                         spot = market_prices['Adj Close'][idx]
                         if position.quantity>=0:
                             portfolio_value += position.quantity* (spot)#spot -position.entry_price
-                            print("For ",position_key, "normally shares")
-                            print("With a position: ",position)
-                            print("position.quantity",position.quantity, "normally positive")
-                            print("Current spot",spot, " and the previous entry was ", position.entry_price)
-                            print("position.quantity",position.quantity* (spot-position.entry_price))
+
                         else: #if short
                             portfolio_value += position.quantity* (spot) #-position.entry_price
-                            print("For ",position_key, "shares normally")
-                            print("With a position: ",position)
-                            print("position.quantity",position.quantity, "noramlly negative")
-                            print("Current spot",spot, " and the previous entry was ", position.entry_price)
-                            print("position.quantity",position.quantity* (spot-position.entry_price))
+
         return portfolio_value
     
-    #modifid
-    #def execute_portfolio(self, portfolio: dict, prices: dict, date: datetime):
-    #    """Executes the trades for the portfolio based on the generated weights."""
-        
-        # First, handle all the sell orders to free up cash
-    #    for ticker, weight in portfolio.items():
-    #        price = prices.get(ticker)
-    #        if price is None:
-    #            if self.verbose:
-    #                logging.warning(f"Price for {ticker} not available on {date}")
-    #            continue
-    #        
-    #        total_value = self.get_portfolio_value(prices)
-    #        target_value = total_value * weight
-    #        current_value = self.positions.get(ticker, Position(ticker, 0, 0)).quantity * price
-    #        diff_value = target_value - current_value
-    #        quantity_to_trade = int(diff_value / price)
-    #        
-    #        if quantity_to_trade < 0:
-    #            self.sell(ticker, abs(quantity_to_trade), price, date)
-        
-        # Then, handle all the buy orders, checking if there's enough cash
-    #    for ticker, weight in portfolio.items():
-    #        price = prices.get(ticker)
-    #        if price is None:
-    #           if self.verbose:
-    #                logging.warning(f"Price for {ticker} not available on {date}")
-    #            continue
-            
-    #        total_value = self.get_portfolio_value(prices)
-    #        target_value = total_value * weight
-    #        current_value = self.positions.get(ticker, Position(ticker, 0, 0)).quantity * price
-    #        diff_value = target_value - current_value
-    #        quantity_to_trade = int(diff_value / price)
-            
-    #        if quantity_to_trade > 0:
-    #            available_cash = self.get_cash_balance()
-    #            cost = quantity_to_trade * price
-    #            
-    #            if cost <= available_cash:
-    #                self.buy(ticker, quantity_to_trade, price, date,"Shares or Options")
-    #            else:
-    #                if self.verbose:
-    #                    logging.warning(f"Not enough cash to buy {quantity_to_trade} of {ticker} on {date}. Needed: {cost}, Available: {available_cash}")
-    #                    logging.info(f"Buying as many shares of {ticker} as possible with available cash.")
-    #                quantity_to_trade = int(available_cash / price)
-    #                self.buy(ticker, quantity_to_trade, price, date,"Shares or Options")
-    ####################
+
     def execute_portfolio(self, portfolio: dict, prices: dict, date: datetime, strategy_type: str):
-        """Executes the trades for the portfolio based on the generated weights."""
+        """Executes the trades for the portfolio based on the generated weights.
+        
+        Args:
+        portfolio (dict): A dictionary representing the target portfolio allocation. The structure depends on the strategy:
+                          - For "cash" strategy:
+                            - Keys are ticker symbols (e.g., "AAPL", "^GSPC").
+                            - Values are target weights.
+                          - For "vol" strategy:
+                            - Keys are (ticker, position_type) tuples.
+                            - Values are target weights.
+        prices (dict): A dictionary containing the current market prices of assets.
+        date (datetime): The date of the trade execution.
+        strategy_type (str): "cash" or "vol"
+    Returns:
+        None: This method modifies the portfolio and cash balance in place. Delegates the execution to private methods (`_execute_cash_strategy` or `_execute_vol_strategy`) based on `strategy_type`.
+
+        """
         if strategy_type == "cash":
             self._execute_cash_strategy(portfolio, prices, date)
         elif strategy_type == "vol":
             self._execute_vol_strategy(portfolio, prices, date)
     
     def _execute_cash_strategy(self, portfolio: dict, prices: dict, date: datetime):
-        """Handle cash strategy trading."""
+        """Handle cash strategy trading.
+        This method ensures that the portfolio is rebalanced to align with the target weights specified
+        in the `portfolio` dictionary. It first processes all sell orders to free up cash and then handles
+        buy orders to achieve the target allocations. This way it maximizes the cash available.
+
+        Args:
+            portfolio (dict): A dictionary specifying the target portfolio allocation. Keys are ticker symbols (e.g., "AAPL"),
+                            and values are target weights as fractions (e.g., 0.2 for 20% of portfolio value).
+            prices (dict): A dictionary containing the current market prices for assets.
+            date (datetime): The date of trade execution.
+
+        Returns:
+            None: The method modifies the internal state of the portfolio and cash balance directly.
+
+        """
         # First, handle all the sell orders to free up cash
         for ticker, weight in portfolio.items():
             price = prices.get(ticker)
@@ -401,10 +453,31 @@ class Broker:
         """
         Execute volatility strategy delta hedging for SPX and SX5E.
 
-        Parameters:
-            portfolio (dict): Portfolio weights.
-            prices (dict): Dictionary containing prices (option and shares) and option data for indices.
-            date (datetime): Current date of execution.
+        Args:
+        portfolio (dict): A dictionary specifying the target portfolio allocation. Keys are ticker symbols (e.g., "^GSPC", "SX5E"),
+        and values are target weights as fractions (e.g., 0.5 for 50% of portfolio value).
+    
+        prices (dict): A dictionary containing:
+                - "ticker": Mapping of indices to their identifiers (e.g., {0: "^GSPC", 1: "SX5E"}).
+                - "Adj Close": Adjusted close prices of the underlying assets.
+                - "Price Option": Prices of the options contracts.
+                - "Cost Hedging": Cost of hedging per option.
+
+        date (datetime): The date of execution for trades.
+
+        Returns:
+            None: Updates the portfolio by executing trades for both options and underlying shares.
+
+        Process:
+            - Step 1: Validate Portfolio:
+            Skips execution if the portfolio is empty or invalid.
+            - Step 2: Adjust Options Exposure:
+            Calculates the difference between the target value and the current value of options positions.
+            Buys or sells options contracts to align with the target exposure.
+            - Step 3: Perform Delta Hedging:
+            Calculates the required hedging position based on the options delta and adjusts the underlying asset exposure.
+            Buys or sells shares of the underlying asset to neutralize the delta.
+
         """
         if not portfolio:
             logging.warning(f"Empty or invalid portfolio passed for execution on {date}. Skipping.")
@@ -518,8 +591,48 @@ class RiskModel:
 
 @dataclass
 class StopLoss(RiskModel):
+    """
+    Implements a stop-loss risk model to trigger portfolio rebalancing or liquidation when losses exceed a specified threshold.
+
+    Attributes:
+        threshold (float): 
+            The loss threshold (expressed as a decimal fraction) at which stop-loss orders are triggered. 
+            Defaults to 0.1 (10%).
+
+    Methods:
+        trigger_stop_loss(t, portfolio, prices, position_type, broker, strategy_type):
+            Evaluates the portfolio and triggers stop-loss actions for positions exceeding the loss threshold.
+    """
     threshold: float = 0.1
     def trigger_stop_loss(self, t: datetime, portfolio: dict, prices: dict,position_type:str, broker: Broker, strategy_type: str):
+        """        
+        Evaluates the portfolio for stop-loss conditions and executes necessary trades.
+
+        Args:
+            t (datetime): The current timestamp when the stop-loss evaluation is performed.
+            portfolio (dict): A dictionary of portfolio weights.
+            prices (dict): A dictionary containing the current market prices for tickers:
+                    - For "cash" strategy: {ticker: current_price}.
+                    - For "vol" strategy:
+                        - "ticker": Mapping of indices to their identifiers (e.g., "^GSPC").
+                        - "Adj Close": Adjusted close prices for underlying assets.
+                        - "Price Option": Current prices for options.
+            position_type (str): The type of position to evaluate, e.g., "Shares" or "Options".
+            broker (Broker): The broker instance managing portfolio positions and executing trades.
+            strategy_type (str): The strategy type, either "cash" or "vol," determining the logic for stop-loss execution.
+
+        Process:
+            - For "cash" strategy:
+                1. Checks each ticker in the broker's positions.
+                2. Compares the current market price to the entry price.
+                3. If the loss percentage exceeds the threshold, sells all units of the position.
+            - For "vol" strategy:
+                1. Evaluates both "Shares" and "Options" positions.
+                2. Adjusts logic based on long or short positions:
+                    - For long positions: Loss is calculated as (current_price - entry_price) / entry_price.
+                    - For short positions: Loss is calculated as (entry_price - current_price) / entry_price.
+                3. Executes necessary buy or sell orders based on loss conditions.
+        """
         if strategy_type=="cash":
             
             for ticker, position in list(broker.positions.items()): 
@@ -635,6 +748,77 @@ class Backtest:
 
     ###third version: 
     def run_backtest(self):
+        """
+        Executes the backtest for the defined strategy over the specified date range.
+
+        The method orchestrates the entire backtesting process, including data retrieval, 
+        portfolio rebalancing, applying risk models, and recording the results.
+
+        All this is done by:
+        1. Retrieving market data based on the strategy type ("cash" or "volatility").
+        2. Initializing data and information processing modules.
+        3. Iteratively process each date in the backtest range:
+            - Apply risk management models (e.g., stop-loss).
+            - Rebalance the portfolio based on the defined rebalance frequency and strategy logic.
+        4. Calculating and log the final portfolio value and P&L.
+        5. Save the transaction log and store the backtest results in a blockchain for record-keeping.
+
+        Args:
+            None. All necessary parameters are retrieved from the instance variables.
+
+        Attributes (from instance):
+            self.initial_date (datetime): 
+                Start date of the backtest.
+            self.final_date (datetime): 
+                End date of the backtest.
+            self.strategy_type (str): 
+                The trading strategy type ("cash" or "vol").
+            self.universe (list): 
+                List of tickers or indices to be traded in the backtest.
+            self.index_universe (list): 
+                List of indices for volatility strategies (used only for "vol").
+            self.ngrok_url (str): 
+                URL for accessing external surface vol data (used for dynamic data retrieval).
+            self.broker (Broker): 
+                Handles trades, maintains positions, and tracks cash and portfolio value.
+            self.information_class (class): 
+                Dynamically initialized class for processing data and computing portfolios.
+            self.time_column (str): 
+                Column name for time data in the dataset.
+            self.company_column (str): 
+                Column name for the company or ticker information in the dataset.
+            self.adj_close_column (str): 
+                Column name for adjusted close prices.
+            self.rebalance_flag (function): 
+                Determines when to rebalance the portfolio.
+            self.initial_cash (float): 
+                Starting cash for the backtest.
+            self.backtest_name (str): 
+                Name of the backtest for logging and saving results.
+
+        Raises:
+            ValueError: If the provided strategy type is unsupported.
+
+        Key Steps:
+            1. Data Retrieval:
+                - For "cash" strategies, retrieves price data using `get_stocks_data`.
+                - For "vol" strategies, retrieves implied volatility and option data using `get_index_data_vols`.
+            2. Data and Information Initialization:
+                - Initializes the `DataModule` with retrieved data.
+                - Dynamically initializes the `information_class` with strategy-specific parameters.
+            3. Backtest Iteration:
+                - Iterates through each date in the date range, applying the following:
+                    - Risk Model: Executes stop-loss logic based on portfolio and prices.
+                    - Rebalancing: Computes portfolio weights and executes trades when rebalancing is triggered.
+            4. Final Portfolio Evaluation:
+                - Calculates and logs the final portfolio value and P&L.
+                - Saves transaction logs and stores the backtest results in the blockchain.
+
+        Output:
+            - Saves transaction logs as a CSV file named after the backtest.
+            - Stores the backtest results in the blockchain for immutable record-keeping.
+
+        """
         logging.info(f"Running backtest from {self.initial_date} to {self.final_date}.")
         
         # Format initial and final dates
@@ -679,14 +863,7 @@ class Backtest:
         info = self.information_class(**info_kwargs)
         
         # Run the backtest logic
-        for t in pd.date_range(start=self.initial_date, end=self.final_date, freq='D'):
-        #    if self.rebalance_flag().time_to_rebalance(t):
-        #        logging.info(f"Rebalancing portfolio at {t}.")
-        #        information_set = info.compute_information(t, base_url=self.ngrok_url)
-        #        portfolio = info.compute_portfolio(t, information_set)
-        #        prices = info.get_prices(t, self.strategy_type)
-        #        self.broker.execute_portfolio(portfolio, prices, t, self.strategy_type)
-        ###################Debeuging from there: all above seems to work fine for both vol and cash    
+        for t in pd.date_range(start=self.initial_date, end=self.final_date, freq='D'):  
             
             logging.info(f"Processing date: {t}")
             

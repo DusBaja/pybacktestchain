@@ -33,7 +33,24 @@ UNIVERSE_SEC.extend(["^GSPC", "^STOXX50E"])
 
 def get_data_api(date, name, base_url):
     """
-    Fetch data from the Flask API based on date and index name and return as a DataFrame.
+    Fetch data from the Flask API for a specific date and index name, returning it as a DataFrame.
+
+    This function handles mapping specific index names, makes multiple attempts to fetch the data
+    from the API in case of failures, and logs the process for troubleshooting.
+
+    Args:
+        date (str): The date for which to fetch data, in the format "YYYY-MM-DD".
+        name (str): The name of the index (e.g., "^GSPC" for S&P 500 or "^STOXX50E" for Euro Stoxx 50).
+        base_url (str): The base URL of the Flask API.
+
+    Returns:
+        pd.DataFrame: A pandas DataFrame containing the fetched data. If the request fails or
+                      the response is empty, an empty DataFrame is returned.
+
+    Notes:
+        - The function maps "^GSPC" to "S&P 500" and "^STOXX50E" to "Euro Stoxx 50" before making the API request.
+        - It attempts to fetch data up to 3 times with exponential backoff in case of errors.
+        - The function logs success, warning, and error messages for better traceability.
     """
     # Map specific index names
     if name == "^GSPC":
@@ -148,7 +165,7 @@ def get_volatility(vol_surface_df, index_price, percentage_spot):
     """
     Get the volatility for a given index price percentage by interpolating between the closest strikes.
 
-    Parameters:
+    Args:
         vol_surface_df (pd.DataFrame): The volatility surface dataframe with strikes as columns.
         index_price (float): The current index price to approximate the volatility.
         percentage_spot (float): Percentage of the index price to target for strike selection.
@@ -203,7 +220,7 @@ def get_index_data_vol(ticker,start_date,end_date, percentage_spot=1, base_url=N
     """
     Retrieves historical index data and appends ATM volatility data from an API.
 
-    Parameters:
+    Args:
         ticker (str): The ticker symbol for the index (e.g., '^GSPC' or '^STOXX50E').
         start_date: start date for the historical data, after 2024-09-30.
         end_date: end date for the historical data 
@@ -252,7 +269,7 @@ def get_index_data_vols(tickers,start_date,end_date, percentage_spot=1, base_url
     """
     Retrieves historical index data and appends ATM volatility data from an API.
 
-    Parameters:
+    Args:
         tickers (str): tickers symbol for the index (e.g., '^GSPC' and '^STOXX50E').
         start_date: start date for the historical data, after 2024-09-30.
         end_date: end date for the historical data 
@@ -329,23 +346,6 @@ class Information:
     percentage_spot: float = 1.0
     strategy_type: str = 'cash'
     
-    #def slice_data(self, t : datetime):
-    ##    # Get the data module 
-    #    data = self.data_module.data
-    #    # Get the time step 
-    #    s = self.s
-
-        # Convert both `t` and the data column to timezone-aware, if needed
-    #    if t.tzinfo is not None:
-            # If `t` is timezone-aware, make sure data is also timezone-aware
-    #        data[self.time_column] = pd.to_datetime(data[self.time_column]).dt.tz_localize(t.tzinfo.zone, ambiguous='NaT', nonexistent='NaT')
-    #    else:
-    ##        # If `t` is timezone-naive, ensure the data is timezone-naive as well
-    #        data[self.time_column] = pd.to_datetime(data[self.time_column]).dt.tz_localize(None)
-        
-        # Get the data only between t-s and t
-    #    data = data[(data[self.time_column] >= t - s) & (data[self.time_column] < t)]
-    #    return data
     ####modified: 
     def slice_data(self, t: datetime):
         """
@@ -367,14 +367,13 @@ class Information:
         data = data[(data[self.time_column] >= (t - s)) & (data[self.time_column] < t)]
         return data
 
-
-    ######end of the modification
+   
     @staticmethod
     def black_scholes(spot_price, strike_price, T, r, sigma, option_type='call'):
         """
         Function to compute the Black-Scholes option price.
 
-        Parameters:
+        Args:
             spot_price (float): The current spot price of the underlying asset
             strike_price (float): The strike price of the option
             T (float): Time to expiration in years
@@ -401,7 +400,7 @@ class Information:
         """
         Compute the delta of an option using the Black-Scholes model.
 
-        Parameters:
+        Args:
             spot_price (float): The current spot price of the underlying asset.
             strike_price (float): The strike price of the option.
             T (float): Time to expiration in years.
@@ -421,6 +420,40 @@ class Information:
             raise ValueError("Invalid option type. Use 'call' or 'put'.")
 
     def get_prices(self, t : datetime,strategy_type: str,class_name:str):
+        """
+        Retrieve the prices for portfolio rebalancing at a specific time `t`.
+
+        This method retrieves either the adjusted closing prices (for cash strategies) or option prices 
+        and associated delta hedging costs (for volatility strategies). Prices are calculated differently 
+        based on the selected strategy type and the class implementing the strategy.
+
+        Args:
+            t (datetime): The specific time for which prices are retrieved.
+            strategy_type (str): The trading strategy, either "cash" or "vol".
+            class_name (str): The name of the strategy class, either "Momentum" or "ShortSkew", used 
+                            to determine the method for option price and delta hedging cost calculation.
+
+        Returns:
+            dict: 
+                - For "cash" strategy: A dictionary mapping company tickers to their adjusted closing prices.
+                - For "vol" strategy: A dictionary containing:
+                    - Adjusted close prices (`Adj Close`).
+                    - Implied volatilities (`vol`).
+                    - Option prices (`Price Option`) calculated using the Black-Scholes model.
+                    - Delta hedging costs (`Cost Hedging`).
+
+        Notes:
+            - For "cash" strategies, the last available adjusted closing price for each company is used.
+            - For "Momentum" volatility strategies:
+                - A one-month (21/365) expiration and a 105% strike (call option) are assumed.
+                - Option prices and delta hedging costs are calculated using the Black-Scholes model.
+            - For "ShortSkew" volatility strategies:
+                - A one-month (21/365) expiration and a 95% strike (put option) are assumed.
+                - Option prices and delta hedging costs are calculated using the black_scholes function.
+            - Delta hedging costs are negative for the long call options (we need to short shares, so the cost are negative: it's a gain) 
+                    and negative for short put options (we need to short shares, so the cost are negative: it's a gain).
+            
+        """
         # gets the prices at which the portfolio will be rebalanced at time t 
         data = self.slice_data(t)
         
@@ -486,7 +519,40 @@ class Information:
              
 @dataclass
 class FirstTwoMoments(Information):
+    """
+    A class for implementing portfolio optimization using the first two moments (mean and covariance).
+    This class computes the portfolio weights based on expected returns and covariance of assets (historical data).
+    
+    Attributes:
+        strategy_type (str): The type of strategy only supportes "cash".
+    """
     def compute_portfolio(self, t:datetime, information_set):
+        """
+        Compute portfolio weights based on expected returns and covariance matrix.
+
+        This method performs quadratic optimization to find the portfolio weights that maximize 
+        the risk-adjusted return. The optimization considers the expected returns, covariance matrix, 
+        and risk aversion parameter.
+
+        Args:
+            t (datetime): The current date for which the portfolio is being computed.
+            information_set (dict): A dictionary containing:
+                - 'expected_return': Array of expected returns for each asset.
+                - 'covariance_matrix': Covariance matrix of asset returns.
+                - 'companies': List of company tickers.
+
+        Returns:
+            dict: A dictionary mapping company tickers to portfolio weights. If the optimization fails, 
+                  an equal-weight portfolio is returned.
+
+        Raises:
+            Exception: If the optimization does not converge or if an error occurs during computation.
+
+        Notes:
+            - Short selling is not allowed; portfolio weights are constrained to [0.0, 1.0].
+            - If the optimization fails, logs a warning and defaults to an equal-weight portfolio.
+            - Risk aversion parameter (`gamma`) is set to 1 by default.
+        """
         try:
             mu = information_set['expected_return']
             Sigma = information_set['covariance_matrix']
@@ -521,6 +587,26 @@ class FirstTwoMoments(Information):
             return {k: 1/len(information_set['companies']) for k in information_set['companies']}
 
     def compute_information(self, t : datetime,base_url=None): # I added the base_url part even if not used as it would block the code otherwise
+        """
+        Compute the information set required for portfolio optimization.
+
+        This method calculates the expected returns and covariance matrix for the assets in the portfolio 
+        based on historical data. The information set is stored in a dictionary and includes:
+            - Expected returns per asset.
+            - Covariance matrix of asset returns.
+            - List of asset tickers.
+
+        Args:
+            t (datetime): The current date for which the information is being computed.
+            base_url (str, optional): Base URL for additional data fetching (not used here but included for compatibility).
+
+        Returns:
+            dict: A dictionary containing:
+                - 'expected_return': Array of expected returns for each asset.
+                - 'covariance_matrix': Covariance matrix of asset returns.
+                - 'companies': List of company tickers.
+
+        """
         try:
             # Get the data module 
             data = self.slice_data(t)
@@ -561,12 +647,42 @@ class FirstTwoMoments(Information):
             return {}
 
 class Momentum(Information):
+    """
+    Implements the Momentum strategy for portfolio construction.
+
+    The Momentum strategy selects assets based on their past performance, focusing on those expected to 
+    perform best in the future. This class supports both "cash" and "vol" strategy types. For the vol strategy
+    it's implemented by going full long a call 105% strike on the best expected performer. We compute the 
+    expected return directly on the implied vol: which has increased the most is selected therefore.
+
+
+    Attributes:
+        previous_best_performer (str): Tracks the last best-performing asset in the "vol" strategy.
+        previous_position (dict): Tracks the last portfolio allocation for the "vol" strategy.
+    """
     previous_best_performer: str = None  # Tracks the last best performer
     previous_position: dict = None  # Tracks the last position (index and option characteristics)
 
     def compute_portfolio(self, t: datetime, information_set):
         """
-        Constructs the portfolio based on the selected strategy type (cash or vol).
+        Constructs a portfolio based on the selected strategy type.
+
+        For the "cash" strategy:
+        - Allocates weights proportional to the expected returns of assets.
+        - If the total expected return is non-positive, it assigns equal weights to all assets.
+
+        For the "vol" strategy:
+        - Allocates 100% of the portfolio to the asset (index) with the highest implied volatility.
+        - Maintains the same position if the best-performing asset does not change.
+
+        Args:
+            t (datetime): The current date for which the portfolio is being constructed.
+            information_set (dict): The data required for portfolio construction:
+
+        Returns:
+            dict: A dictionary mapping asset names to portfolio weights. If information is invalid or missing, 
+                  returns an empty portfolio or retains the previous position.
+
         """
         if self.strategy_type == 'cash':
             expected_return = information_set.get('expected_return', np.array([]))
@@ -632,6 +748,27 @@ class Momentum(Information):
     def compute_information(self, t: datetime, base_url=None):
         """
         Prepares the information set required for portfolio construction based on strategy type.
+
+        For the "cash" strategy:
+        - Calculates the expected return as the mean of percentage price changes for each asset.
+        - Includes the list of asset tickers in the information set.
+
+        For the "vol" strategy:
+        - Calculates the expected return as the mean of percentage changes in implied volatilities.
+        - Includes the list of indices in the information set.
+
+        Args:
+            t (datetime): The current date for which the information is being computed.
+            base_url (str, optional): Base URL for additional data fetching (not used here but included for compatibility).
+
+        Returns:
+            dict: A dictionary containing:
+                - For "cash" strategy:
+                    - 'expected_return': Array of expected returns for each asset.
+                    - 'companies': List of asset tickers.
+                - For "vol" strategy:
+                    - 'expected_return_implied_vol': Array of expected returns of implied volatilities.
+                    - 'companies': List of indices.
         """
         data =self.slice_data(t)
         information_set = {}
@@ -658,8 +795,6 @@ class Momentum(Information):
                 #"spot_prices": {},
                 #"companies": indices,
             }
-            # Define indices and time range
-            #indices = ["^GSPC", "^STOXX50E"]
             
             data = data.sort_values(by=[self.company_column, self.time_column])
             data['return'] =  data.groupby(self.company_column)[self.vol_column].pct_change()
@@ -670,64 +805,44 @@ class Momentum(Information):
                     "expected_return_implied_vol": expected_return,
                     "companies": companies,
                 }
-            
-            #start_date = (t).strftime("%Y-%m-%d") #- timedelta(1)
-            #end_date = (t).strftime("%Y-%m-%d")
-            #percentage_spot = self.percentage_spot
 
-            
-            
-            
-        
-            #for index in indices:
-                
-               # try:
-                    # Fetch data
-                #index_data = get_index_data_vol(index, start_date,end_date, percentage_spot, base_url)
-                
-                #if index_data is not None and not index_data.empty:
-                    
-                    # Extract the most recent data
-                #    latest_data = index_data.iloc[-1]
-                #    spot_price = latest_data.get("Close", np.nan)
-                #    implied_vol = latest_data.get("Percentage Spot selected vol for the close", np.nan)
-                #    if np.isnan(implied_vol)==False:
-                        
-                #        information_set["implied_vols"][index] = float(implied_vol)
-                #    else: 
-                #        information_set["implied_vols"][index] = 0.0
-                #    if np.isnan(spot_price)==False:
-                        
-                #        information_set["spot_prices"][index] = float(spot_price)
-                #    else:
-                #        information_set["spot_prices"][index] = 0.0
-                    
-                    #information_set["expected_return"].append(spot_price)  # Placeholder for expected return
-                    
-                        
-                        
-                        #else:
-                        #    logging.warning(f"Incomplete data for {index} on {end_date}. Skipping.")
-                        #    information_set["expected_return"].append(0)  # Fallback to zero return
-                    #else:
-                    #    logging.warning(f"No data returned for {index} in the specified range.")
-                    #    information_set["expected_return"].append(0)  # Default to zero
-                #except Exception as e:
-                #    logging.error(f"Error fetching data for {index}: {e}")
-                #    information_set["expected_return"].append(0)  # Default to zero return
-                #    continue
-
-            print("information set in compute_information for vol strat: ",information_set)
+            logging.info("Information set in Momentum's compute information for vol stratrategy is: ",information_set)
             return information_set
 
 class ShortSkew(Information):
+    """
+    Implements the ShortSkew strategy for portfolio construction.
+
+    The ShortSkew strategy involves shorting a 1-month 95% put option on the index 
+    with the smallest realized volatility over the past 10 days. This strategy is 
+    only applicable to the "vol" strategy type.
+
+    Attributes:
+        previous_best_performer (str): Tracks the currently shorted index which is actually the one with the smallest realized (less risky).
+        previous_position (dict): Tracks the previous portfolio allocation.
+    """
     previous_best_performer: str = None  # Tracks the currently shorted index
     previous_position: dict = None  # Tracks the previous portfolio allocation
 
     def compute_portfolio(self, t: datetime, information_set):
         """
-        I need to readjust the vol part !!! Constructs the portfolio by shorting a 1-month 90% put option 
-        on the index with the smallest realized volatility over the past 20 days.
+        Constructs a portfolio by shorting the index with the smallest realized volatility.
+
+        The portfolio is adjusted to reflect a short position (-1 weight) on the 
+        index identified as the best performer (smallest realized volatility). If 
+        the best performer remains unchanged, the previous portfolio allocation 
+        is retained.
+
+        Args:
+            t (datetime): The current date for which the portfolio is being constructed.
+            information_set (dict): Data required for portfolio construction:
+                - 'realized_vols': Array of realized volatilities for indices.
+                - 'companies': List of index tickers.
+
+        Returns:
+            dict: A dictionary mapping index names to portfolio weights. If information 
+                  is invalid or incomplete, an empty portfolio or the previous position is returned.
+
         """
     
         if self.strategy_type != 'vol':
@@ -769,6 +884,21 @@ class ShortSkew(Information):
     def compute_information(self, t: datetime, base_url=None):
         """
         Prepares the information set required for portfolio construction.
+
+        The information set includes realized volatilities, implied volatilities, and 
+        the list of indices. Realized volatilities are computed over the past 10 days 
+        and annualized.
+
+        Args:
+            t (datetime): The current date for which the information is being computed.
+            base_url (str, optional): Base URL for additional data fetching.
+
+        Returns:
+            dict: A dictionary containing:
+                - 'realized_vols': Array of 10-day annualized realized volatilities for indices.
+                - 'implied_vols': Array of implied volatilities for indices.
+                - 'companies': List of index tickers.
+
         """
         data =self.slice_data(t)
         information_set = {}

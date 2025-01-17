@@ -9,7 +9,6 @@ def start_flask_app():
 
     Start the Flask application by running app.py.
 
-    :param flask_app_path: Path to the Flask app to be executed (e.g., 'app.py')
     :return: Process object for the Flask app.
     """
     try:
