@@ -3,34 +3,54 @@ name: Release
 on:
   push:
     branches:
-      - final-project  # Replace with your branch name if it's different
+      - final-project
 
 jobs:
   release:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Step 2: Set up Node.js for npm (JavaScript dependencies)
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      # Install dependencies for semantic-release
-      - name: Install dependencies
+      # Step 3: Install npm dependencies (for package.json in the root directory)
+      - name: Install npm dependencies
+        working-directory: .  # If package.json is in the root
         run: npm install
 
-      # Prepare Python package for src/pybacktestchain
-      - name: Install Python dependencies
+      # Step 4: Install Python dependencies for src/pybacktestchain
+      - name: Install Python dependencies for src/pybacktestchain
+        working-directory: ./src/pybacktestchain  # Adjust if needed
         run: |
           python -m venv venv
           source venv/bin/activate
           pip install poetry
           poetry install
 
-      # Run semantic-release for versioning and publishing
+      # Step 5: Handle Flask App dependencies
+      - name: Handle Flask App dependencies
+        working-directory: ./flask_app  # Adjust if needed
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+
+      # Step 6: Handle Backtest_app dependencies
+      - name: Handle Backtest_app dependencies
+        working-directory: ./Backtest_app  # Adjust if needed
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+
+      # Step 7: Run Semantic Release
       - name: Run Semantic Release
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
