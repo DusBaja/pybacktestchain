@@ -22,38 +22,26 @@ jobs:
           echo "Contents of repository root:"
           ls -la
 
-      # Step 3: Change to the nested directory
-      - name: Move to pybacktestchain directory
-        working-directory: ./pybacktestchain
-        run: |
-          echo "Working directory after moving:"
-          pwd
-          echo "Contents of pybacktestchain:"
-          ls -la
-
-      # Step 4: Set up Node.js
+      # Step 3: Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      # Step 5: Install npm dependencies
+      # Step 4: Install npm dependencies
       - name: Install npm dependencies
-        working-directory: ./pybacktestchain
         run: npm install
 
-      # Step 6: Install Python dependencies
+      # Step 5: Install Python dependencies
       - name: Install Python dependencies
-        working-directory: ./pybacktestchain
         run: |
           python -m venv venv
           source venv/bin/activate
           pip install poetry
           poetry install
 
-      # Step 7: Run Semantic Release
+      # Step 6: Run Semantic Release
       - name: Run Semantic Release
-        working-directory: ./pybacktestchain
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: npx semantic-release
