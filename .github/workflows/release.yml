@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - final-project  # Replace with your branch name if it's different
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      # Install dependencies for semantic-release
+      - name: Install dependencies
+        run: npm install
+
+      # Prepare Python package for src/pybacktestchain
+      - name: Install Python dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install poetry
+          poetry install
+
+      # Run semantic-release for versioning and publishing
+      - name: Run Semantic Release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npx semantic-release
