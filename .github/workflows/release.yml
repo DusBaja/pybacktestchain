@@ -14,7 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Debug current directory context
+      # Step 2: Debug the current directory
       - name: Debug current directory
         run: |
           echo "Current directory:"
@@ -22,24 +22,26 @@ jobs:
           echo "Directory contents:"
           ls -la
 
-      # Step 2: Set up Node.js for npm (JavaScript dependencies)
+      # Step 3: Set up Node.js for npm
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      # Step 3: Install npm dependencies (for package.json in the root directory)
+      # Step 4: Install npm dependencies
       - name: Install npm dependencies
+        working-directory: ./  # Ensure npm looks for package.json here
         run: npm install
 
-      # Step 4: Install Python dependencies (from requirements.txt in root)
+      # Step 5: Install Python dependencies
       - name: Install Python dependencies
         run: |
           python -m venv venv
           source venv/bin/activate
-          pip install -r requirements.txt
+          pip install poetry
+          poetry install
 
-      # Step 5: Run Semantic Release
+      # Step 6: Run Semantic Release
       - name: Run Semantic Release
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
