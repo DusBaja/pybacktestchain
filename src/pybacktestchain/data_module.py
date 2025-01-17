@@ -17,6 +17,7 @@ import time
 import json
 
 
+
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 
@@ -172,6 +173,8 @@ def get_volatility(vol_surface_df, index_price, percentage_spot):
 
     Returns:
         float: Interpolated or extrapolated volatility. Returns NaN for invalid or non-positive values.
+        The important part is that we already take into account the time decay because there is a gap of 3 months 
+        between our fixed strike vol so the closes fixed strike vol already is touched by time decay
     """
     if vol_surface_df.empty:
         logging.warning("Volatility surface DataFrame is empty. Returning NaN.")
@@ -314,7 +317,7 @@ def get_index_data_vols(tickers,start_date,end_date, percentage_spot=1, base_url
                     df.loc[df['Date'] == date, 'Percentage Spot selected vol for the close'] = np.nan
 
                 
-            #print("Our data",df)
+            
             if not df.empty:
                 dfs.append(df)
         except:
@@ -469,7 +472,8 @@ class Information:
                 Cost_heging =[]
                 
                 for idx in range(len(data)):
-                    T = 21/365  # We assume 1 month exp
+                    
+                    T = 21/365 #- timedelta(idx) # We assume 1 month exp
                     r = 0.0315
                     self.percentage_spot=1.05
                     self.option_type="Call"  
@@ -507,8 +511,8 @@ class Information:
 
 
             
-            prices = prices.to_dict()
-            return prices
+        prices = prices.to_dict()
+        return prices
 
     def compute_information(self, t : datetime):  
         pass
@@ -874,7 +878,7 @@ class ShortSkew(Information):
         # Short 100% on the best performer 
         portfolio = {company: 0 for company in companies}
         portfolio[best_performer] = -1  # Short position
-        print("Our portfolio :",portfolio)
+        
 
         # Store the current position
         self.previous_position = portfolio
@@ -924,7 +928,7 @@ class ShortSkew(Information):
            
             'companies': companies,
         }
-        print("information set in compute_information for vol strat in ShortSkew: ",information_set)
+        
         return information_set
         
 

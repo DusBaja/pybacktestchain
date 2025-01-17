@@ -201,8 +201,7 @@ class Broker:
         else: ##We added the short selling on vol strategies and unique key !
             position_key = (ticker, position_type)
             if position_key in self.positions: 
-                print("position_key in the sell !!!",position_key)
-                print("Currennt positionssss in the sell ",self.positions)
+                
                 position = self.positions[position_key]
                 
                 #if position.position_type == position_type: #and position.quantity >= quantity
@@ -506,7 +505,7 @@ class Broker:
                 diff_value_hedging = target_value_hedging-current_value_hedging
 
                 quantity_to_trade_for_hedging = int(diff_value_hedging/spot)
-                print("quantity_to_trade_for_hedging",quantity_to_trade_for_hedging)
+                logging.info(f"The quantity to trade for delta hedging is {quantity_to_trade_for_hedging}")
                 if quantity_to_trade < 0:
                     self.sell(ticker, abs(quantity_to_trade), price_option, date,"Options","vol")
                 if quantity_to_trade_for_hedging<0:
@@ -528,13 +527,13 @@ class Broker:
                 diff_value = target_value - current_value
                 quantity_to_trade = int(diff_value / price_option)
                 delta = Cost_heging/spot
-                print("delta",delta)
+                
                 target_value_hedging = quantity_to_trade*Cost_heging*weight
                 
                 current_value_hedging = self.positions.get(position_key_share, Position(ticker, 0, 0,"Shares")).quantity * spot
                 diff_value_hedging = target_value_hedging-current_value_hedging
                 quantity_to_trade_for_hedging = int(diff_value_hedging/spot)
-                print("quantity_to_trade_for_hedging",quantity_to_trade_for_hedging)
+                logging.info(f"The quantity to trade for delta hedging is {quantity_to_trade_for_hedging}")
                 if quantity_to_trade > 0:
                     available_cash = self.get_cash_balance()
                     cost = quantity_to_trade * price_option
@@ -556,7 +555,7 @@ class Broker:
                             logging.warning(f"Not enough cash to buy {quantity_to_trade_for_hedging} shares of {ticker} for delta hedging on {date}. Needed: {Cost_heging}, Available: {available_cash}")
                             logging.info(f"Buying as many shares of {ticker} as possible with available cash.")
                         quantity_to_trade_for_hedging=int(available_cash / spot)
-                        print("quantity_to_trade_for_hedging",quantity_to_trade_for_hedging)
+                        logging.info(f"The quantity to trade for delta hedging is {quantity_to_trade_for_hedging}")
                         self.buy(ticker, quantity_to_trade_for_hedging, spot, date,"Shares","vol")
                         logging.info(f"Delta hedge executed for {ticker} on {date}.")
                     
@@ -586,7 +585,7 @@ class EndOfMonth(RebalanceFlag):
 
 @dataclass
 class RiskModel:
-    def trigger_stop_loss(self, t: datetime, portfolio: dict, prices: dict,position_type:str,broker: Broker, strategy_type: str):
+    def trigger_stop_loss(self, t: datetime, portfolio: dict, prices: dict,broker: Broker, strategy_type: str):
         pass
 
 @dataclass
@@ -604,7 +603,7 @@ class StopLoss(RiskModel):
             Evaluates the portfolio and triggers stop-loss actions for positions exceeding the loss threshold.
     """
     threshold: float = 0.1
-    def trigger_stop_loss(self, t: datetime, portfolio: dict, prices: dict,position_type:str, broker: Broker, strategy_type: str):
+    def trigger_stop_loss(self, t: datetime, portfolio: dict, prices: dict, broker: Broker, strategy_type: str):
         """        
         Evaluates the portfolio for stop-loss conditions and executes necessary trades.
 
@@ -645,8 +644,8 @@ class StopLoss(RiskModel):
                 # Calculate the loss percentage
                 loss = (current_price - entry_price) / entry_price
                 if loss < -self.threshold:
-                    logging.info(f"Stop loss triggered for {ticker} at {t}. Selling all {position_type}.")
-                    broker.sell(ticker, position.quantity, current_price, t,position_type,"cash")
+                    logging.info(f"Stop loss triggered for {ticker} at {t}. Selling all Shares in our cash position.")
+                    broker.sell(ticker, position.quantity, current_price, t,"Shares","cash")
             
         else:
             for position_key, position in list(broker.positions.items()):
@@ -698,7 +697,7 @@ class Backtest:
     initial_date: datetime
     final_date: datetime
     strategy_type: str #= "cash"  or "vol"
-    universe = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NVDA', 'INTC', 'CSCO', 'NFLX','^GSPC', '^STOXX50E']
+    universe = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NVDA', 'INTC', 'CSCO', 'NFLX']#,'^GSPC', '^STOXX50E'
     index_universe = ['^GSPC', '^STOXX50E']
     information_class : type  = Information
     s: timedelta = timedelta(days=360)
@@ -711,6 +710,7 @@ class Backtest:
     name_blockchain: str = 'backtest'
     verbose: bool = True
     broker: Broker = Broker(cash=initial_cash, verbose=verbose)
+    PnL: float =0.0
 
 
 
@@ -721,8 +721,9 @@ class Backtest:
             raise ValueError(f"Invalid strategy_type '{self.strategy_type}'. Must be 'cash' or 'vol'.")
         if self.strategy_type == "vol":
             self.universe = self.index_universe
+
         logging.info(f"Backtest initialized with strategy type: {self.strategy_type}")
-        #flask_app_path = '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/flask_app/app.py'
+                    #flask_app_path = '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/flask_app/app.py'
         self.flask_process = start_flask_app()  # Start Flask app
         self.ngrok_url = start_ngrok()  # Start ngrok and get the URL
         if self.flask_process:
@@ -755,7 +756,7 @@ class Backtest:
         portfolio rebalancing, applying risk models, and recording the results.
 
         All this is done by:
-        1. Retrieving market data based on the strategy type ("cash" or "volatility").
+        1. Retrieving market data based on the strategy type ("cash" or "volatility"). 
         2. Initializing data and information processing modules.
         3. Iteratively process each date in the backtest range:
             - Apply risk management models (e.g., stop-loss).
@@ -817,6 +818,35 @@ class Backtest:
         Output:
             - Saves transaction logs as a CSV file named after the backtest.
             - Stores the backtest results in the blockchain for immutable record-keeping.
+        
+        Example: 
+                initial_date = datetime(2024, 10, 1)
+                final_date = datetime(2025, 1, 10)
+                strategy_type = "vol"
+                indices = ["^STOXX50E","^GSPC"]  
+                risk_model_class = StopLoss
+                name_blockchain = 'shortskew_sx5e'##
+                verbose = True
+
+                # Initialize the Backtest object with the Momentul information class
+                backtest = Backtest(
+                    initial_date=initial_date,
+                    final_date=final_date,
+                    strategy_type=strategy_type,
+                    information_class=lambda **kwargs: ShortSkew(
+                        **{
+                            "indices": indices,           
+                            "strategy_type": strategy_type,
+                            **kwargs                      
+                        }
+                    ),
+                    risk_model=risk_model_class,
+                    name_blockchain=name_blockchain,
+                    verbose=verbose
+                )
+
+                # Run the backtest
+                backtest.run_backtest()
 
         """
         logging.info(f"Running backtest from {self.initial_date} to {self.final_date}.")
@@ -841,6 +871,7 @@ class Backtest:
             logging.info("Retrieving price data for the universe.")
             df = get_stocks_data(self.universe, init_, final_)
             
+            
         else:
             raise ValueError(f"Unsupported strategy type: {self.strategy_type}")
 
@@ -863,6 +894,7 @@ class Backtest:
         info = self.information_class(**info_kwargs)
         
         # Run the backtest logic
+        
         for t in pd.date_range(start=self.initial_date, end=self.final_date, freq='D'):  
             
             logging.info(f"Processing date: {t}")
@@ -870,12 +902,13 @@ class Backtest:
             if self.risk_model is not None:
                 #logging.info("Applying risk model.")
                 portfolio = info.compute_portfolio(t, info.compute_information(t,base_url=self.ngrok_url))
+                
                 logging.debug(f"Portfolio at {t}: {portfolio}")
                 prices = info.get_prices(t, self.strategy_type,str(type(info).__name__))
                 
                 logging.debug(f"Prices at {t}: {prices}")
                 logging.debug(f"Broker state at {t}: {self.broker}")
-                self.risk_model.trigger_stop_loss(t, portfolio, prices,'Shares', self.broker,self.strategy_type) #test with only shares
+                self.risk_model.trigger_stop_loss(t, portfolio, prices, self.broker,self.strategy_type) 
 
             if self.rebalance_flag().time_to_rebalance(t):
                 logging.info("-----------------------------------")
@@ -891,12 +924,13 @@ class Backtest:
         Portfolio_value= self.broker.get_portfolio_value(info.get_prices(self.final_date, self.strategy_type,str(type(info).__name__)),self.strategy_type)
         logging.info(f"Backtest completed. Final portfolio value: {Portfolio_value}")
         df = self.broker.get_transaction_log()
-        logging.info(f"Final P&L: {Portfolio_value- self.initial_cash}")
-        print("self cash initial", self.initial_cash)
+        self.PnL=Portfolio_value- self.initial_cash
+        logging.info(f"Final P&L: {self.PnL}")
+        
         # Save the transaction log
         df.to_csv(f"backtests/{self.backtest_name}.csv")
 
         # Store the backtest in the blockchain
         self.broker.blockchain.add_block(self.backtest_name, df.to_string())
-        print("self.backtest_name",self.backtest_name)
+        logging.info(f"The backtest's name is {self.backtest_name}")
         logging.info("Backtest results stored in blockchain.")
