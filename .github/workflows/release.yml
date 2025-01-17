@@ -14,34 +14,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Debug repository structure
-      - name: Debug current structure
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "Contents of repository root:"
-          ls -la
-
-      # Step 3: Set up Node.js
+      # Step 2: Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      # Step 4: Install npm dependencies
+      # Step 3: Install npm dependencies
       - name: Install npm dependencies
         run: npm install
+        working-directory: ./pybacktestchain  # Adjusted to point to your main directory with package.json
 
-      # Step 5: Install Python dependencies
+      # Step 4: Install Python dependencies (single requirements.txt)
       - name: Install Python dependencies
         run: |
           python -m venv venv
           source venv/bin/activate
-          pip install poetry
-          poetry install
+          pip install -r requirements.txt
+        working-directory: ./pybacktestchain  # Single requirements.txt is used
 
-      # Step 6: Run Semantic Release
+      # Step 5: Run Semantic Release
       - name: Run Semantic Release
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: npx semantic-release
+        working-directory: ./pybacktestchain  # Ensure semantic-release runs from the correct directory
