@@ -20,11 +20,11 @@ jobs:
         with:
           node-version: 18
 
-      # Step 3: Install npm dependencies (ensure package.json is in the root)
+      # Step 3: Install npm dependencies (for package.json in the root directory)
       - name: Install npm dependencies
         run: npm install
 
-      # Step 4: Install Python dependencies (using the root requirements.txt)
+      # Step 4: Install Python dependencies (from requirements.txt in root)
       - name: Install Python dependencies
         run: |
           python -m venv venv
