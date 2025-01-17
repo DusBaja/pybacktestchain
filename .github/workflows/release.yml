@@ -22,7 +22,6 @@ jobs:
 
       # Step 3: Install npm dependencies (for package.json in the root directory)
       - name: Install npm dependencies
-        working-directory: .  # If package.json is in the root
         run: npm install
 
       # Step 4: Install Python dependencies for src/pybacktestchain
