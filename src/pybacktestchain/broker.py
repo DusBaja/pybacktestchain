@@ -609,7 +609,9 @@ class Backtest:
         if self.strategy_type == "vol":
             self.universe = self.index_universe
         logging.info(f"Backtest initialized with strategy type: {self.strategy_type}")
-        flask_app_path = '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/flask_app/app.py'
+        #flask_app_path = '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/flask_app/app.py'
+        package_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
+        flask_app_path = os.path.join(package_root, "flask_app", "app.py")
         self.flask_process = start_flask_app(flask_app_path)  # Start Flask app
         self.ngrok_url = start_ngrok()  # Start ngrok and get the URL
         #self.ngrok_url = start_ngrok()  # Start Cloudflared (disguised as ngrok)

@@ -4,8 +4,9 @@ import os
 
 app = Flask(__name__)
 
-
-data_folder = "/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/flask_app/Data_treated"
+flask_app_root = os.path.abspath(os.path.dirname(__file__))
+#data_folder = "/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/flask_app/Data_treated"
+data_folder = os.path.join(flask_app_root, "Data_treated")
 
 @app.route('/')
 def index():
