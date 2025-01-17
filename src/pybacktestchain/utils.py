@@ -1,5 +1,5 @@
 import random
-
+from datetime import datetime
 # List of animals, professions, and colors
 animals = [
     "Eagle", "Tiger", "Lion", "Wolf", "Bear", "Falcon", "Shark", "Panther", "Leopard", "Cheetah", 
@@ -21,4 +21,5 @@ def generate_random_name():
     animal = random.choice(animals)
     profession = random.choice(professions)
     color = random.choice(colors)
-    return f"{color}{animal}{profession}"
+    current_date = datetime.now().strftime("%Y%m%d_%H%M")
+    return f"{color}{animal}{profession}_{current_date}" #we reduce the chances to have twice the same 

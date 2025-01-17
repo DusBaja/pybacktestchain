@@ -610,9 +610,7 @@ class Backtest:
             self.universe = self.index_universe
         logging.info(f"Backtest initialized with strategy type: {self.strategy_type}")
         #flask_app_path = '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/flask_app/app.py'
-        package_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
-        flask_app_path = os.path.join(package_root, "flask_app", "app.py")
-        self.flask_process = start_flask_app(flask_app_path)  # Start Flask app
+        self.flask_process = start_flask_app()  # Start Flask app
         self.ngrok_url = start_ngrok()  # Start ngrok and get the URL
         if self.flask_process:
             base_url = start_ngrok()

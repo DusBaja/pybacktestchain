@@ -11,10 +11,9 @@ from flask_app.utils import start_flask_app, start_ngrok
 
 # Start Flask app and ngrok for obtaining the URL
 #flask_app_path = '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/flask_app/app.py'
-package_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
-flask_app_path = os.path.join(package_root, "flask_app", "app.py")
 
-flask_process = start_flask_app(flask_app_path)
+
+flask_process = start_flask_app()
 ngrok_url = start_ngrok()
 print("the URL:", ngrok_url)
 

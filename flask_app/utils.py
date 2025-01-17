@@ -3,7 +3,7 @@ import time
 import logging
 import requests
 import os 
-def start_flask_app(flask_app_path):
+def start_flask_app():
     """
     Dynamically checks if Flask is running on port 5000; if not, starts the app with nohup.
 

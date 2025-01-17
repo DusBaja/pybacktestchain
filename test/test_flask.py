@@ -17,8 +17,8 @@ class FlaskAppTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up the Flask app and ngrok tunnel before running tests."""
-        flask_app_path = '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/flask_app/app.py'
-        cls.flask_process = start_flask_app(flask_app_path)  # Start Flask app
+        
+        cls.flask_process = start_flask_app()  # Start Flask app
         cls.ngrok_url = start_ngrok()  # Start ngrok
 
         if not cls.ngrok_url:
