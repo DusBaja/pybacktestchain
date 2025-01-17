@@ -33,7 +33,7 @@ print(block_chain.is_valid())
 #''''''''' 
 # For the vol strategy Momentum: working for both
 initial_date = datetime(2024, 10, 1)
-final_date = datetime(2024, 12, 20)
+final_date = datetime(2025, 1, 10)
 strategy_type = "vol"
 indices = ["^STOXX50E","^GSPC"]  # Focus only on SX5E
 risk_model_class = StopLoss
@@ -45,7 +45,7 @@ backtest = Backtest(
     initial_date=initial_date,
     final_date=final_date,
     strategy_type=strategy_type,
-    information_class=lambda **kwargs: Momentum(
+    information_class=lambda **kwargs: ShortSkew(
         **{
             "indices": indices,           
             "strategy_type": strategy_type,
