@@ -158,3 +158,537 @@
 127.0.0.1 - - [30/Nov/2024 23:29:42] "GET /api/data?date=2024-11-29&index=Euro%20Stoxx%2050 HTTP/1.1" 200 -
 127.0.0.1 - - [30/Nov/2024 23:29:44] "GET /api/data?date=2024-11-30&index=Euro%20Stoxx%2050 HTTP/1.1" 200 -
 127.0.0.1 - - [30/Nov/2024 23:29:49] "GET /api/data?date=2024-11-30&index=S%26P%20500 HTTP/1.1" 200 -
+/Users/dusicabajalica/Library/Caches/pypoetry/virtualenvs/pybacktestchain-iETKW-D1-py3.10/bin/python: can't open file '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/src/flask_app/app.py': [Errno 2] No such file or directory
+/Users/dusicabajalica/Library/Caches/pypoetry/virtualenvs/pybacktestchain-iETKW-D1-py3.10/bin/python: can't open file '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/src/flask_app/app.py': [Errno 2] No such file or directory
+  File "/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/flask_app/nohup.out", line 1
+    * Serving Flask app "app" (lazy loading)
+IndentationError: unexpected indent
+/Users/dusicabajalica/Library/Caches/pypoetry/virtualenvs/pybacktestchain-iETKW-D1-py3.10/bin/python: can't open file '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/src/flask_app/app.py': [Errno 2] No such file or directory
+/Users/dusicabajalica/Library/Caches/pypoetry/virtualenvs/pybacktestchain-iETKW-D1-py3.10/bin/python: can't open file '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/flask_app/flask_app/app.py': [Errno 2] No such file or directory
+ * Serving Flask app 'app'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.64:5000
+Press CTRL+C to quit
+127.0.0.1 - - [17/Jan/2025 04:52:48] "GET /api/data?date=2024-10-01&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:48] "GET /api/data?date=2024-10-02&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:52:49] "GET /api/data?date=2024-10-02&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:52:51] "GET /api/data?date=2024-10-02&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:52:51] "GET /api/data?date=2024-10-03&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:51] "GET /api/data?date=2024-10-04&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:52] "GET /api/data?date=2024-10-07&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:52] "GET /api/data?date=2024-10-08&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:52] "GET /api/data?date=2024-10-09&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:52] "GET /api/data?date=2024-10-10&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:52] "GET /api/data?date=2024-10-11&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:52:53] "GET /api/data?date=2024-10-11&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:52:55] "GET /api/data?date=2024-10-11&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:52:55] "GET /api/data?date=2024-10-14&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:55] "GET /api/data?date=2024-10-15&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:56] "GET /api/data?date=2024-10-16&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:56] "GET /api/data?date=2024-10-17&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:56] "GET /api/data?date=2024-10-18&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:56] "GET /api/data?date=2024-10-21&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:56] "GET /api/data?date=2024-10-22&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:56] "GET /api/data?date=2024-10-23&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:56] "GET /api/data?date=2024-10-24&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:56] "GET /api/data?date=2024-10-25&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:56] "GET /api/data?date=2024-10-28&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:57] "GET /api/data?date=2024-10-29&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:57] "GET /api/data?date=2024-10-30&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:57] "GET /api/data?date=2024-10-31&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:57] "GET /api/data?date=2024-11-01&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:57] "GET /api/data?date=2024-11-04&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:57] "GET /api/data?date=2024-11-05&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:57] "GET /api/data?date=2024-11-06&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:57] "GET /api/data?date=2024-11-07&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:57] "GET /api/data?date=2024-11-08&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:58] "GET /api/data?date=2024-11-11&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:58] "GET /api/data?date=2024-11-12&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:58] "GET /api/data?date=2024-11-13&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:58] "GET /api/data?date=2024-11-14&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:58] "GET /api/data?date=2024-11-15&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:58] "GET /api/data?date=2024-11-18&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:58] "GET /api/data?date=2024-11-19&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:58] "GET /api/data?date=2024-11-20&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:59] "GET /api/data?date=2024-11-21&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:59] "GET /api/data?date=2024-11-22&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:59] "GET /api/data?date=2024-11-25&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:59] "GET /api/data?date=2024-11-26&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:59] "GET /api/data?date=2024-11-27&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:59] "GET /api/data?date=2024-11-29&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:59] "GET /api/data?date=2024-12-02&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:59] "GET /api/data?date=2024-12-03&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:52:59] "GET /api/data?date=2024-12-04&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:00] "GET /api/data?date=2024-12-05&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:00] "GET /api/data?date=2024-12-06&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:00] "GET /api/data?date=2024-12-09&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:00] "GET /api/data?date=2024-12-10&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:00] "GET /api/data?date=2024-12-11&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:00] "GET /api/data?date=2024-12-12&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:00] "GET /api/data?date=2024-12-13&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:01] "GET /api/data?date=2024-12-16&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:01] "GET /api/data?date=2024-12-17&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:01] "GET /api/data?date=2024-12-18&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:01] "GET /api/data?date=2024-12-19&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:01] "GET /api/data?date=2024-12-20&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:01] "GET /api/data?date=2024-12-23&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:01] "GET /api/data?date=2024-12-24&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:53:02] "GET /api/data?date=2024-12-24&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:53:04] "GET /api/data?date=2024-12-24&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:53:04] "GET /api/data?date=2024-12-26&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:05] "GET /api/data?date=2024-12-27&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:05] "GET /api/data?date=2024-12-30&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:05] "GET /api/data?date=2024-12-31&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:53:06] "GET /api/data?date=2024-12-31&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:53:06] "GET /api/data?date=2024-10-01&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:53:06] "GET /api/data?date=2024-10-02&index=Euro+Stoxx+50 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:55:25] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:55:58] "GET /api/data?date=2024-10-01&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:55:58] "GET /api/data?date=2024-10-02&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:55:59] "GET /api/data?date=2024-10-02&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:01] "GET /api/data?date=2024-10-02&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:01] "GET /api/data?date=2024-10-03&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:01] "GET /api/data?date=2024-10-04&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:02] "GET /api/data?date=2024-10-07&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:02] "GET /api/data?date=2024-10-08&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:02] "GET /api/data?date=2024-10-09&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:02] "GET /api/data?date=2024-10-10&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:02] "GET /api/data?date=2024-10-11&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:03] "GET /api/data?date=2024-10-11&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:05] "GET /api/data?date=2024-10-11&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:05] "GET /api/data?date=2024-10-14&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:05] "GET /api/data?date=2024-10-15&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:05] "GET /api/data?date=2024-10-16&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:06] "GET /api/data?date=2024-10-17&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:06] "GET /api/data?date=2024-10-18&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:06] "GET /api/data?date=2024-10-21&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:06] "GET /api/data?date=2024-10-22&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:06] "GET /api/data?date=2024-10-23&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:06] "GET /api/data?date=2024-10-24&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:06] "GET /api/data?date=2024-10-25&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:06] "GET /api/data?date=2024-10-28&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:06] "GET /api/data?date=2024-10-29&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:07] "GET /api/data?date=2024-10-30&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:07] "GET /api/data?date=2024-10-31&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:07] "GET /api/data?date=2024-11-01&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:07] "GET /api/data?date=2024-11-04&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:07] "GET /api/data?date=2024-11-05&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:07] "GET /api/data?date=2024-11-06&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:07] "GET /api/data?date=2024-11-07&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:07] "GET /api/data?date=2024-11-08&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:07] "GET /api/data?date=2024-11-11&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:08] "GET /api/data?date=2024-11-12&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:08] "GET /api/data?date=2024-11-13&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:08] "GET /api/data?date=2024-11-14&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:08] "GET /api/data?date=2024-11-15&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:08] "GET /api/data?date=2024-11-18&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:08] "GET /api/data?date=2024-11-19&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:08] "GET /api/data?date=2024-11-20&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:08] "GET /api/data?date=2024-11-21&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:08] "GET /api/data?date=2024-11-22&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:08] "GET /api/data?date=2024-11-25&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:09] "GET /api/data?date=2024-11-26&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:09] "GET /api/data?date=2024-11-27&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:09] "GET /api/data?date=2024-11-29&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:09] "GET /api/data?date=2024-12-02&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:09] "GET /api/data?date=2024-12-03&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:09] "GET /api/data?date=2024-12-04&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:09] "GET /api/data?date=2024-12-05&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:09] "GET /api/data?date=2024-12-06&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:09] "GET /api/data?date=2024-12-09&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:10] "GET /api/data?date=2024-12-10&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:10] "GET /api/data?date=2024-12-11&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:10] "GET /api/data?date=2024-12-12&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:10] "GET /api/data?date=2024-12-13&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:10] "GET /api/data?date=2024-12-16&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:10] "GET /api/data?date=2024-12-17&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:10] "GET /api/data?date=2024-12-18&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:10] "GET /api/data?date=2024-12-19&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:10] "GET /api/data?date=2024-12-20&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:11] "GET /api/data?date=2024-12-23&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:11] "GET /api/data?date=2024-12-24&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:12] "GET /api/data?date=2024-12-24&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:14] "GET /api/data?date=2024-12-24&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:14] "GET /api/data?date=2024-12-26&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:14] "GET /api/data?date=2024-12-27&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:14] "GET /api/data?date=2024-12-30&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:14] "GET /api/data?date=2024-12-31&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:15] "GET /api/data?date=2024-12-31&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:17] "GET /api/data?date=2024-12-31&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:18] "GET /api/data?date=2025-01-02&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:18] "GET /api/data?date=2025-01-03&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:18] "GET /api/data?date=2025-01-06&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:18] "GET /api/data?date=2025-01-07&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:18] "GET /api/data?date=2025-01-08&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:18] "GET /api/data?date=2024-10-01&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:18] "GET /api/data?date=2024-10-02&index=Euro+Stoxx+50 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:19] "GET /api/data?date=2024-10-02&index=Euro+Stoxx+50 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:21] "GET /api/data?date=2024-10-02&index=Euro+Stoxx+50 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:22] "GET /api/data?date=2024-10-03&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:22] "GET /api/data?date=2024-10-04&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:22] "GET /api/data?date=2024-10-07&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:22] "GET /api/data?date=2024-10-08&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:22] "GET /api/data?date=2024-10-09&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:22] "GET /api/data?date=2024-10-10&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:22] "GET /api/data?date=2024-10-11&index=Euro+Stoxx+50 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:23] "GET /api/data?date=2024-10-11&index=Euro+Stoxx+50 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:25] "GET /api/data?date=2024-10-11&index=Euro+Stoxx+50 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:56:25] "GET /api/data?date=2024-10-14&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:25] "GET /api/data?date=2024-10-15&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:26] "GET /api/data?date=2024-10-16&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:26] "GET /api/data?date=2024-10-17&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:26] "GET /api/data?date=2024-10-18&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:26] "GET /api/data?date=2024-10-21&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:26] "GET /api/data?date=2024-10-22&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:26] "GET /api/data?date=2024-10-23&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:26] "GET /api/data?date=2024-10-24&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:26] "GET /api/data?date=2024-10-25&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:26] "GET /api/data?date=2024-10-28&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:26] "GET /api/data?date=2024-10-29&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:27] "GET /api/data?date=2024-10-30&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:27] "GET /api/data?date=2024-10-31&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:27] "GET /api/data?date=2024-11-01&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:27] "GET /api/data?date=2024-11-04&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:27] "GET /api/data?date=2024-11-05&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:27] "GET /api/data?date=2024-11-06&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:27] "GET /api/data?date=2024-11-07&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:27] "GET /api/data?date=2024-11-08&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:27] "GET /api/data?date=2024-11-11&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:27] "GET /api/data?date=2024-11-12&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:27] "GET /api/data?date=2024-11-13&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:28] "GET /api/data?date=2024-11-14&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:28] "GET /api/data?date=2024-11-15&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:28] "GET /api/data?date=2024-11-18&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+Received date: 2024-10-01, index: S&P 500
+Received date: 2024-10-02, index: S&P 500
+Received date: 2024-10-02, index: S&P 500
+Received date: 2024-10-02, index: S&P 500
+Received date: 2024-10-03, index: S&P 500
+Received date: 2024-10-04, index: S&P 500
+Received date: 2024-10-07, index: S&P 500
+Received date: 2024-10-08, index: S&P 500
+Received date: 2024-10-09, index: S&P 500
+Received date: 2024-10-10, index: S&P 500
+Received date: 2024-10-11, index: S&P 500
+Received date: 2024-10-11, index: S&P 500
+Received date: 2024-10-11, index: S&P 500
+Received date: 2024-10-14, index: S&P 500
+Received date: 2024-10-15, index: S&P 500
+Received date: 2024-10-16, index: S&P 500
+Received date: 2024-10-17, index: S&P 500
+Received date: 2024-10-18, index: S&P 500
+Received date: 2024-10-21, index: S&P 500
+Received date: 2024-10-22, index: S&P 500
+Received date: 2024-10-23, index: S&P 500
+Received date: 2024-10-24, index: S&P 500
+Received date: 2024-10-25, index: S&P 500
+Received date: 2024-10-28, index: S&P 500
+Received date: 2024-10-29, index: S&P 500
+Received date: 2024-10-30, index: S&P 500
+Received date: 2024-10-31, index: S&P 500
+Received date: 2024-11-01, index: S&P 500
+Received date: 2024-11-04, index: S&P 500
+Received date: 2024-11-05, index: S&P 500
+Received date: 2024-11-06, index: S&P 500
+Received date: 2024-11-07, index: S&P 500
+Received date: 2024-11-08, index: S&P 500
+Received date: 2024-11-11, index: S&P 500
+Received date: 2024-11-12, index: S&P 500
+Received date: 2024-11-13, index: S&P 500
+Received date: 2024-11-14, index: S&P 500
+Received date: 2024-11-15, index: S&P 500
+Received date: 2024-11-18, index: S&P 500
+Received date: 2024-11-19, index: S&P 500
+Received date: 2024-11-20, index: S&P 500
+Received date: 2024-11-21, index: S&P 500
+Received date: 2024-11-22, index: S&P 500
+Received date: 2024-11-25, index: S&P 500
+Received date: 2024-11-26, index: S&P 500
+Received date: 2024-11-27, index: S&P 500
+Received date: 2024-11-29, index: S&P 500
+Received date: 2024-12-02, index: S&P 500
+Received date: 2024-12-03, index: S&P 500
+Received date: 2024-12-04, index: S&P 500
+Received date: 2024-12-05, index: S&P 500
+Received date: 2024-12-06, index: S&P 500
+Received date: 2024-12-09, index: S&P 500
+Received date: 2024-12-10, index: S&P 500
+Received date: 2024-12-11, index: S&P 500
+Received date: 2024-12-12, index: S&P 500
+Received date: 2024-12-13, index: S&P 500
+Received date: 2024-12-16, index: S&P 500
+Received date: 2024-12-17, index: S&P 500
+Received date: 2024-12-18, index: S&P 500
+Received date: 2024-12-19, index: S&P 500
+Received date: 2024-12-20, index: S&P 500
+Received date: 2024-12-23, index: S&P 500
+Received date: 2024-12-24, index: S&P 500
+Received date: 2024-12-24, index: S&P 500
+Received date: 2024-12-24, index: S&P 500
+Received date: 2024-12-26, index: S&P 500
+Received date: 2024-12-27, index: S&P 500
+Received date: 2024-12-30, index: S&P 500
+Received date: 2024-12-31, index: S&P 500
+Received date: 2024-12-31, index: S&P 500
+Received date: 2024-10-01, index: Euro Stoxx 50
+Received date: 2024-10-02, index: Euro Stoxx 50
+Received date: 2024-10-01, index: S&P 500
+Received date: 2024-10-02, index: S&P 500
+Received date: 2024-10-02, index: S&P 500
+Received date: 2024-10-02, index: S&P 500
+Received date: 2024-10-03, index: S&P 500
+Received date: 2024-10-04, index: S&P 500
+Received date: 2024-10-07, index: S&P 500
+Received date: 2024-10-08, index: S&P 500
+Received date: 2024-10-09, index: S&P 500
+Received date: 2024-10-10, index: S&P 500
+Received date: 2024-10-11, index: S&P 500
+Received date: 2024-10-11, index: S&P 500
+Received date: 2024-10-11, index: S&P 500
+Received date: 2024-10-14, index: S&P 500
+Received date: 2024-10-15, index: S&P 500
+Received date: 2024-10-16, index: S&P 500
+Received date: 2024-10-17, index: S&P 500
+Received date: 2024-10-18, index: S&P 500
+Received date: 2024-10-21, index: S&P 500
+Received date: 2024-10-22, index: S&P 500
+Received date: 2024-10-23, index: S&P 500
+Received date: 2024-10-24, index: S&P 500
+Received date: 2024-10-25, index: S&P 500
+Received date: 2024-10-28, index: S&P 500
+Received date: 2024-10-29, index: S&P 500
+Received date: 2024-10-30, index: S&P 500
+Received date: 2024-10-31, index: S&P 500
+Received date: 2024-11-01, index: S&P 500
+Received date: 2024-11-04, index: S&P 500
+Received date: 2024-11-05, index: S&P 500
+Received date: 2024-11-06, index: S&P 500
+Received date: 2024-11-07, index: S&P 500
+Received date: 2024-11-08, index: S&P 500
+Received date: 2024-11-11, index: S&P 500
+Received date: 2024-11-12, index: S&P 500
+Received date: 2024-11-13, index: S&P 500
+Received date: 2024-11-14, index: S&P 500
+Received date: 2024-11-15, index: S&P 500
+Received date: 2024-11-18, index: S&P 500
+Received date: 2024-11-19, index: S&P 500
+Received date: 2024-11-20, index: S&P 500
+Received date: 2024-11-21, index: S&P 500
+Received date: 2024-11-22, index: S&P 500
+Received date: 2024-11-25, index: S&P 500
+Received date: 2024-11-26, index: S&P 500
+Received date: 2024-11-27, index: S&P 500
+Received date: 2024-11-29, index: S&P 500
+Received date: 2024-12-02, index: S&P 500
+Received date: 2024-12-03, index: S&P 500
+Received date: 2024-12-04, index: S&P 500
+Received date: 2024-12-05, index: S&P 500
+Received date: 2024-12-06, index: S&P 500
+Received date: 2024-12-09, index: S&P 500
+Received date: 2024-12-10, index: S&P 500
+Received date: 2024-12-11, index: S&P 500
+Received date: 2024-12-12, index: S&P 500
+Received date: 2024-12-13, index: S&P 500
+Received date: 2024-12-16, index: S&P 500
+Received date: 2024-12-17, index: S&P 500
+Received date: 2024-12-18, index: S&P 500
+Received date: 2024-12-19, index: S&P 500
+Received date: 2024-12-20, index: S&P 500
+Received date: 2024-12-23, index: S&P 500
+Received date: 2024-12-24, index: S&P 500
+Received date: 2024-12-24, index: S&P 500
+Received date: 2024-12-24, index: S&P 500
+Received date: 2024-12-26, index: S&P 500
+Received date: 2024-12-27, index: S&P 500
+Received date: 2024-12-30, index: S&P 500
+Received date: 2024-12-31, index: S&P 500
+Received date: 2024-12-31, index: S&P 500
+Received date: 2024-12-31, index: S&P 500
+Received date: 2025-01-02, index: S&P 500
+Received date: 2025-01-03, index: S&P 500
+Received date: 2025-01-06, index: S&P 500
+Received date: 2025-01-07, index: S&P 500
+Received date: 2025-01-08, index: S&P 500
+Received date: 2024-10-01, index: Euro Stoxx 50
+Received date: 2024-10-02, index: Euro Stoxx 50
+Received date: 2024-10-02, index: Euro Stoxx 50
+Received date: 2024-10-02, index: Euro Stoxx 50
+Received date: 2024-10-03, index: Euro Stoxx 50
+Received date: 2024-10-04, index: Euro Stoxx 50
+Received date: 2024-10-07, index: Euro Stoxx 50
+Received date: 2024-10-08, index: Euro Stoxx 50
+Received date: 2024-10-09, index: Euro Stoxx 50
+Received date: 2024-10-10, index: Euro Stoxx 50
+Received date: 2024-10-11, index: Euro Stoxx 50
+Received date: 2024-10-11, index: Euro Stoxx 50
+Received date: 2024-10-11, index: Euro Stoxx 50
+Received date: 2024-10-14, index: Euro Stoxx 50
+Received date: 2024-10-15, index: Euro Stoxx 50
+Received date: 2024-10-16, index: Euro Stoxx 50
+Received date: 2024-10-17, index: Euro Stoxx 50
+Received date: 2024-10-18, index: Euro Stoxx 50
+Received date: 2024-10-21, index: Euro Stoxx 50
+Received date: 2024-10-22, index: Euro Stoxx 50
+Received date: 2024-10-23, index: Euro Stoxx 50
+Received date: 2024-10-24, index: Euro Stoxx 50
+Received date: 2024-10-25, index: Euro Stoxx 50
+Received date: 2024-10-28, index: Euro Stoxx 50
+Received date: 2024-10-29, index: Euro Stoxx 50
+Received date: 2024-10-30, index: Euro Stoxx 50
+Received date: 2024-10-31, index: Euro Stoxx 50
+Received date: 2024-11-01, index: Euro Stoxx 50
+Received date: 2024-11-04, index: Euro Stoxx 50
+Received date: 2024-11-05, index: Euro Stoxx 50
+Received date: 2024-11-06, index: Euro Stoxx 50
+Received date: 2024-11-07, index: Euro Stoxx 50
+Received date: 2024-11-08, index: Euro Stoxx 50
+Received date: 2024-11-11, index: Euro Stoxx 50
+Received date: 2024-11-12, index: Euro Stoxx 50
+Received date: 2024-11-13, index: Euro Stoxx 50
+Received date: 2024-11-14, index: Euro Stoxx 50
+Received date: 2024-11-15, index: Euro Stoxx 50
+Received date: 2024-11-18, index: Euro Stoxx 50
+127.0.0.1 - - [17/Jan/2025 04:56:28] "GET /api/data?date=2024-11-19&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:28] "GET /api/data?date=2024-11-20&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:28] "GET /api/data?date=2024-11-21&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:28] "GET /api/data?date=2024-11-22&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:28] "GET /api/data?date=2024-11-25&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:28] "GET /api/data?date=2024-11-26&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:28] "GET /api/data?date=2024-11-27&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:29] "GET /api/data?date=2024-11-28&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:29] "GET /api/data?date=2024-11-29&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:29] "GET /api/data?date=2024-12-02&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:56:29] "GET /api/data?date=2024-12-03&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+ * Serving Flask app 'app'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.64:5000
+Press CTRL+C to quit
+127.0.0.1 - - [17/Jan/2025 04:59:37] "GET /api/data?date=2024-10-01&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:37] "GET /api/data?date=2024-10-02&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:59:38] "GET /api/data?date=2024-10-02&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:59:40] "GET /api/data?date=2024-10-02&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:59:40] "GET /api/data?date=2024-10-03&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:40] "GET /api/data?date=2024-10-04&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:40] "GET /api/data?date=2024-10-07&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:40] "GET /api/data?date=2024-10-08&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:40] "GET /api/data?date=2024-10-09&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:40] "GET /api/data?date=2024-10-10&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:41] "GET /api/data?date=2024-10-11&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:59:42] "GET /api/data?date=2024-10-11&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:59:44] "GET /api/data?date=2024-10-11&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:59:44] "GET /api/data?date=2024-10-14&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:44] "GET /api/data?date=2024-10-15&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:44] "GET /api/data?date=2024-10-16&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:44] "GET /api/data?date=2024-10-17&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:44] "GET /api/data?date=2024-10-18&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:44] "GET /api/data?date=2024-10-21&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:44] "GET /api/data?date=2024-10-22&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:45] "GET /api/data?date=2024-10-23&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:45] "GET /api/data?date=2024-10-24&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:45] "GET /api/data?date=2024-10-25&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:45] "GET /api/data?date=2024-10-28&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:45] "GET /api/data?date=2024-10-29&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:45] "GET /api/data?date=2024-10-30&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:45] "GET /api/data?date=2024-10-31&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:45] "GET /api/data?date=2024-11-01&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:46] "GET /api/data?date=2024-11-04&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:46] "GET /api/data?date=2024-11-05&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:46] "GET /api/data?date=2024-11-06&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:46] "GET /api/data?date=2024-11-07&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:46] "GET /api/data?date=2024-11-08&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:46] "GET /api/data?date=2024-11-11&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:46] "GET /api/data?date=2024-11-12&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:46] "GET /api/data?date=2024-11-13&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:46] "GET /api/data?date=2024-11-14&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:47] "GET /api/data?date=2024-11-15&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:47] "GET /api/data?date=2024-11-18&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:47] "GET /api/data?date=2024-11-19&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:47] "GET /api/data?date=2024-11-20&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:47] "GET /api/data?date=2024-11-21&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:47] "GET /api/data?date=2024-11-22&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:47] "GET /api/data?date=2024-11-25&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:47] "GET /api/data?date=2024-11-26&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:47] "GET /api/data?date=2024-11-27&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:48] "GET /api/data?date=2024-11-29&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:48] "GET /api/data?date=2024-12-02&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:48] "GET /api/data?date=2024-12-03&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:48] "GET /api/data?date=2024-12-04&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:48] "GET /api/data?date=2024-12-05&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:48] "GET /api/data?date=2024-12-06&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:48] "GET /api/data?date=2024-12-09&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:48] "GET /api/data?date=2024-12-10&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:48] "GET /api/data?date=2024-12-11&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:49] "GET /api/data?date=2024-12-12&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:49] "GET /api/data?date=2024-12-13&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:49] "GET /api/data?date=2024-12-16&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:49] "GET /api/data?date=2024-12-17&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:49] "GET /api/data?date=2024-12-18&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:49] "GET /api/data?date=2024-12-19&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:49] "GET /api/data?date=2024-12-20&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:49] "GET /api/data?date=2024-12-23&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:49] "GET /api/data?date=2024-12-24&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:59:50] "GET /api/data?date=2024-12-24&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:59:53] "GET /api/data?date=2024-12-24&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:59:53] "GET /api/data?date=2024-12-26&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:53] "GET /api/data?date=2024-12-27&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:53] "GET /api/data?date=2024-12-30&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:53] "GET /api/data?date=2024-12-31&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:59:54] "GET /api/data?date=2024-12-31&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:59:56] "GET /api/data?date=2024-12-31&index=S%26P+500 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:59:56] "GET /api/data?date=2025-01-02&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:56] "GET /api/data?date=2025-01-03&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:57] "GET /api/data?date=2025-01-06&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:57] "GET /api/data?date=2025-01-07&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:57] "GET /api/data?date=2025-01-08&index=S%26P+500 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:57] "GET /api/data?date=2024-10-01&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 04:59:57] "GET /api/data?date=2024-10-02&index=Euro+Stoxx+50 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 04:59:58] "GET /api/data?date=2024-10-02&index=Euro+Stoxx+50 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 05:00:00] "GET /api/data?date=2024-10-02&index=Euro+Stoxx+50 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 05:00:00] "GET /api/data?date=2024-10-03&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:00] "GET /api/data?date=2024-10-04&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:01] "GET /api/data?date=2024-10-07&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:01] "GET /api/data?date=2024-10-08&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:01] "GET /api/data?date=2024-10-09&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:01] "GET /api/data?date=2024-10-10&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:01] "GET /api/data?date=2024-10-11&index=Euro+Stoxx+50 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 05:00:02] "GET /api/data?date=2024-10-11&index=Euro+Stoxx+50 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 05:00:04] "GET /api/data?date=2024-10-11&index=Euro+Stoxx+50 HTTP/1.1" 404 -
+127.0.0.1 - - [17/Jan/2025 05:00:04] "GET /api/data?date=2024-10-14&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:04] "GET /api/data?date=2024-10-15&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:04] "GET /api/data?date=2024-10-16&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:05] "GET /api/data?date=2024-10-17&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:05] "GET /api/data?date=2024-10-18&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:05] "GET /api/data?date=2024-10-21&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:05] "GET /api/data?date=2024-10-22&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:05] "GET /api/data?date=2024-10-23&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:05] "GET /api/data?date=2024-10-24&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:05] "GET /api/data?date=2024-10-25&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:05] "GET /api/data?date=2024-10-28&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:05] "GET /api/data?date=2024-10-29&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:05] "GET /api/data?date=2024-10-30&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:05] "GET /api/data?date=2024-10-31&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:06] "GET /api/data?date=2024-11-01&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:06] "GET /api/data?date=2024-11-04&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:06] "GET /api/data?date=2024-11-05&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:06] "GET /api/data?date=2024-11-06&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:06] "GET /api/data?date=2024-11-07&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:06] "GET /api/data?date=2024-11-08&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:06] "GET /api/data?date=2024-11-11&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:06] "GET /api/data?date=2024-11-12&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:07] "GET /api/data?date=2024-11-13&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:07] "GET /api/data?date=2024-11-14&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:07] "GET /api/data?date=2024-11-15&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:07] "GET /api/data?date=2024-11-18&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:07] "GET /api/data?date=2024-11-19&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:07] "GET /api/data?date=2024-11-20&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:07] "GET /api/data?date=2024-11-21&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:07] "GET /api/data?date=2024-11-22&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:07] "GET /api/data?date=2024-11-25&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:07] "GET /api/data?date=2024-11-26&index=Euro+Stoxx+50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jan/2025 05:00:08] "GET /api/data?date=2024-11-27&index=Euro+Stoxx+50 HTTP/1.1" 200 -

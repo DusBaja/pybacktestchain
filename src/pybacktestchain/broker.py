@@ -614,8 +614,16 @@ class Backtest:
         flask_app_path = os.path.join(package_root, "flask_app", "app.py")
         self.flask_process = start_flask_app(flask_app_path)  # Start Flask app
         self.ngrok_url = start_ngrok()  # Start ngrok and get the URL
+        if self.flask_process:
+            base_url = start_ngrok()
+            if base_url:
+                logging.info(f"Flask app is running at {self.ngrok_url }")
+            else:
+                logging.error("Failed to retrieve ngrok URL.")
+        else:
+            logging.error("Failed to start Flask app.")
         #self.ngrok_url = start_ngrok()  # Start Cloudflared (disguised as ngrok)
-        logging.info(f"Flask app running at {self.ngrok_url}")
+        
         #if self.ngrok_url:
         #    logging.info(f"Flask app running at {self.ngrok_url}")
         #else:
