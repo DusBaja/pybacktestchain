@@ -20,36 +20,18 @@ jobs:
         with:
           node-version: 18
 
-      # Step 3: Install npm dependencies (for package.json in the root directory)
+      # Step 3: Install npm dependencies (ensure package.json is in the root)
       - name: Install npm dependencies
         run: npm install
 
-      # Step 4: Install Python dependencies for src/pybacktestchain
-      - name: Install Python dependencies for src/pybacktestchain
-        working-directory: ./src/pybacktestchain  # Adjust if needed
-        run: |
-          python -m venv venv
-          source venv/bin/activate
-          pip install poetry
-          poetry install
-
-      # Step 5: Handle Flask App dependencies
-      - name: Handle Flask App dependencies
-        working-directory: ./flask_app  # Adjust if needed
+      # Step 4: Install Python dependencies (using the root requirements.txt)
+      - name: Install Python dependencies
         run: |
           python -m venv venv
           source venv/bin/activate
           pip install -r requirements.txt
 
-      # Step 6: Handle Backtest_app dependencies
-      - name: Handle Backtest_app dependencies
-        working-directory: ./Backtest_app  # Adjust if needed
-        run: |
-          python -m venv venv
-          source venv/bin/activate
-          pip install -r requirements.txt
-
-      # Step 7: Run Semantic Release
+      # Step 5: Run Semantic Release
       - name: Run Semantic Release
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
