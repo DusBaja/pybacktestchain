@@ -97,6 +97,7 @@ class Broker:
                 logging.info(f"Buying {quantity} of {ticker} at {price} for {position_type}.")
                 #unique key:
                 position_key = (ticker, position_type)
+
                 if position_key in self.positions:
                     position = self.positions[position_key]
                     
@@ -149,10 +150,13 @@ class Broker:
         else: ##We added the short selling on vol strategies and unique key !
             position_key = (ticker, position_type)
             if position_key in self.positions: 
+                print("position_key in the sell !!!",position_key)
+                print("Currennt positionssss in the sell ",self.positions)
                 position = self.positions[position_key]
                 
                 #if position.position_type == position_type: #and position.quantity >= quantity
                 if position.quantity >= quantity and position.quantity>0:
+                    #We have enough long position, to just reduce it 
                     # Update position
                     position.quantity -= quantity #the quantity we order is always positive
                     self.cash += price * quantity
@@ -160,14 +164,43 @@ class Broker:
                         del self.positions[position_key]
                         del self.entry_prices[position_key]
                     self.log_transaction(date, 'SELL', ticker, -quantity, price, position_key[1])#as we are changing the function get_portfolio
-                else: #we are already short or will be so we need to recompute the entry price 
+                elif ((position.quantity>0 and position.quantity <= quantity and  self.cash>= price*(quantity-position.quantity)) or (position.quantity<0 and self.cash>= price*(quantity-position.quantity))):  
+                    #enough cash to justify/cover the short selling
+                    #OR
+                    #enough cash to justify/cover the total short position we want to increase
                     new_quantity=position.quantity -quantity #the quantity we order is always positive
+                    #we are already short or will be so we need to recompute the entry price
                     new_price = (position.entry_price*abs(position.quantity)+price*quantity)/new_quantity
                     position.quantity = new_quantity
                     position.entry_prices=new_price
                     self.cash += price * quantity
                     self.log_transaction(date, 'SELL', ticker, -quantity, price, position_key[1])
-                        
+                
+                elif position.quantity>0 and self.cash <= price*(quantity-position.quantity):
+                #not enough to cover the new short position: partially executing it
+                #if our position's quantity was enough, it would have fall in the first condition: Therefore, quantity>position.quantity
+                    partial_short_position = int(self.cash/price +position.quantity)
+                    #Here: we are only shorting the part we are already long and only exeeding to the limit of what is covered currently by the cash position 
+                    position.quantity -= partial_short_position
+                    self.cash += price*partial_short_position #not changing 
+                    position.entry_prices = price 
+                    self.log_transaction(date, 'SELL', ticker, -partial_short_position, price, position_key[1])
+                elif position.quantity<0 and self.cash>-position.quantity*price+1000:
+                #not enough to cover the full extend of the short position 
+                # but the current short is still well covered with a floor of 1000
+                    partial_short_position = int(self.cash/price +position.quantity) # should remain something positive 1000/price
+                    if partial_short_position>0:
+                        position.quantity -= partial_short_position
+                        self.cash += price*partial_short_position 
+                        position.entry_prices = price 
+                        self.log_transaction(date, 'SELL', ticker, -partial_short_position, price, position_key[1])
+                    else: #the partial short position is not enough important to short it 
+                        if self.verbose:
+                            logging.warning(f"The cash is not enough to short fully. The partial short position of {position_type} to sell {partial_short_position} of {ticker} is not enough. Not executed ")
+                else: #we execute one part of it as not enough to cover the shorting  
+                    if self.verbose:
+                        logging.warning(
+                            f"Not enough {position_type} to sell {quantity} of {ticker}: the cash position doesn't cover it ")                        
                 #else: 
                 #    if self.verbose:
                 #        logging.warning(f"Cannot mix positions of different types for {ticker} ({position.position_type} vs {position_type}).Creating a short selling position.")
@@ -176,14 +209,22 @@ class Broker:
                 
             else: #create a short position
                 # Create a new position
-                if self.verbose:
-                    logging.warning(f"No position to sell. As we are in vol strategy, we are going to short sell")
-                self.positions[position_key] = Position(ticker, -quantity, price, position_key[1])
-                self.cash += price * quantity
-                self.log_transaction(date, 'SELL', ticker, -quantity, price, position_key[1])
-            self.entry_prices[position_key] = price
-                
+                if self.cash >= price*quantity: #enough to cover the new short
 
+                    if self.verbose:
+                        logging.warning(f"No position to sell. As we are in vol strategy, we are going to short sell. Enough cash to justify it.")
+                    self.positions[position_key] = Position(ticker, -quantity, price, position_key[1])
+                    self.cash += price * quantity
+                    self.log_transaction(date, 'SELL', ticker, -quantity, price, position_key[1])
+                    self.entry_prices[position_key] = price
+                else: #not enough to cover the new short:
+                    partial_short_position = int(self.cash/price) 
+                    if self.verbose:
+                        logging.warning(f"No position to sell. As we are in vol strategy, we are going to short sell. Not enough cash to justify it, so we are executing only a portion equal to {partial_short_position} instead of {quantity}.")
+                    self.positions[position_key] = Position(ticker, -partial_short_position, price, position_key[1])
+                    self.cash += price * partial_short_position
+                    self.log_transaction(date, 'SELL', ticker, -partial_short_position, price, position_key[1])
+                    self.entry_prices[position_key] = price
     def log_transaction(self, date, action, ticker, quantity, price,position_type="shares"):
         """Logs the transaction."""
         transaction = pd.DataFrame([{
@@ -215,24 +256,44 @@ class Broker:
         else:
             #position_key = (ticker, position_type)
             for position_key, position in self.positions.items():
+                print("position_key in the get_portfolio_value",position_key)
                 if position_key[0] in list(market_prices["ticker"].values()):
                     ticker=position_key[0]
-                    print("Positions",position)
+                    
                     if position_key[1] =="Options":
                         idx = list(market_prices["ticker"].keys())[list(market_prices['ticker'].values()).index(ticker)]        
                         price_option = market_prices["Price Option"][idx]
                         if position.quantity>=0:
-                            portfolio_value +=position.quantity*price_option
+                            portfolio_value +=position.quantity*(price_option)#price_option  -position.entry_price
+                            print("For ",position_key, "normally options")
+                            print("With a position: ",position)
+                            print("position.quantity",position.quantity)
+                            print("Current price",price_option, " and the previous entry was ", position.entry_price)
+                            print("position.quantity*(price_option-position.entry_price)",position.quantity*(price_option-position.entry_price)) 
                         else: #if short
-                            portfolio_value +=position.quantity*(price_option-position.entry_price) #if the current price is lower than the entry, it's positive
-                                
+                            portfolio_value +=position.quantity*(price_option) #-position.entry_price   if the current price is lower than the entry, it's positive
+                            print("For ",position_key, "normally options")
+                            print("With a position: ",position)
+                            print("position.quantity",position.quantity, "negative normally")
+                            print("Current price",price_option, " and the previous entry was ", position.entry_price)
+                            print("position.quantity*(price_option-position.entry_price)",position.quantity*(price_option-position.entry_price))    
                     else:
                         idx = list(market_prices["ticker"].keys())[list(market_prices['ticker'].values()).index(ticker)]
                         spot = market_prices['Adj Close'][idx]
                         if position.quantity>=0:
-                            portfolio_value += position.quantity* spot
+                            portfolio_value += position.quantity* (spot)#spot -position.entry_price
+                            print("For ",position_key, "normally shares")
+                            print("With a position: ",position)
+                            print("position.quantity",position.quantity, "normally positive")
+                            print("Current spot",spot, " and the previous entry was ", position.entry_price)
+                            print("position.quantity",position.quantity* (spot-position.entry_price))
                         else: #if short
-                            portfolio_value += position.quantity* (spot-position.entry_price)
+                            portfolio_value += position.quantity* (spot) #-position.entry_price
+                            print("For ",position_key, "shares normally")
+                            print("With a position: ",position)
+                            print("position.quantity",position.quantity, "noramlly negative")
+                            print("Current spot",spot, " and the previous entry was ", position.entry_price)
+                            print("position.quantity",position.quantity* (spot-position.entry_price))
         return portfolio_value
     
     #modifid
@@ -490,10 +551,10 @@ class StopLoss(RiskModel):
                     # Calculate the loss percentage
                     if position.quantity >0:
                         loss = (current_price - entry_price) / entry_price
-                        if loss < -self.threshold:
+                        if loss < -self.threshold: #Only if the current price is lower than entry price significantly 
                             logging.info(f"Stop loss triggered for {ticker} at {t}. Selling all {position_type}.")
                             broker.sell(ticker, abs(position.quantity), current_price, t,position_type,"vol")
-                    else:
+                    else: #if the position is a short: we look at the "negative" difference: how much did it decrease
                         loss = (entry_price-current_price) / entry_price
                         if loss < -self.threshold:
                             logging.info(f"Stop loss triggered for {ticker} at {t}. Buying back all {position_type}.")
@@ -551,138 +612,19 @@ class Backtest:
         flask_app_path = '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/flask_app/app.py'
         self.flask_process = start_flask_app(flask_app_path)  # Start Flask app
         self.ngrok_url = start_ngrok()  # Start ngrok and get the URL
+        #self.ngrok_url = start_ngrok()  # Start Cloudflared (disguised as ngrok)
         logging.info(f"Flask app running at {self.ngrok_url}")
+        #if self.ngrok_url:
+        #    logging.info(f"Flask app running at {self.ngrok_url}")
+        #else:
+        #    logging.error("Failed to start Cloudflared. Exiting initialization.")
+        #    raise RuntimeError("Failed to start Cloudflared tunnel.")
 
         # end of added 
         
         self.backtest_name = generate_random_name()
         self.broker.initialize_blockchain(self.name_blockchain)
 
-
-    #def run_backtest(self):
-    #    logging.info(f"Running backtest from {self.initial_date} to {self.final_date}.")
-        ## added 
-    #    if self.strategy_type == "cash":
-        ##stop added 
-    #        logging.info(f"Retrieving price data for universe")
-        ##added
-    #    elif self.strategy_type == "vol":
-    #        logging.info(f"Retrieving implied volatility and option data for universe: {self.universe}")
-        #stop added 
-
-    #    self.risk_model = self.risk_model(threshold=0.1)
-    #    self.initial_date #to yyyy-mm-dd format
-    #    init_ = self.initial_date.strftime('%Y-%m-%d')
-    #    self.final_date #to yyyy-mm-dd format
-    #    final_ = self.final_date.strftime('%Y-%m-%d')
-    #    df = get_stocks_data(self.universe, init_, final_)
-
-        # Initialize the DataModule
-    #    data_module = DataModule(df)
-
-        # Create the Information object
-    #    info = self.information_class(s = self.s, 
-    #                                data_module = data_module,
-    #                                time_column=self.time_column,
-    #                                company_column=self.company_column,
-    #                                adj_close_column=self.adj_close_column)
-        
-        
-    #    for t in pd.date_range(start=self.initial_date, end=self.final_date, freq='D'):
-            #added
-    #        if self.strategy_type == "cash":
-            # stop added 
-    #            if self.risk_model is not None:
-    #                portfolio = info.compute_portfolio(t, info.compute_information(t))
-    #                prices = info.get_prices(t,self.strategy_type)
-    #                self.risk_model.trigger_stop_loss(t, portfolio, prices, self.broker)
-            
-    #            if self.rebalance_flag().time_to_rebalance(t):
-    #                logging.info("-----------------------------------")
-    #                logging.info(f"Rebalancing portfolio at {t}")
-    #                information_set = info.compute_information(t)
-    #                portfolio = info.compute_portfolio(t, information_set)
-    #                prices = info.get_prices(t,self.strategy_type)
-    #                self.broker.execute_portfolio(portfolio, prices, t,self.strategy_type)
-            # added 
-    #        elif self.strategy_type == "vol":
-                # Placeholder for volatility strategy logic (to be implemented later)
-    #            logging.info(f"Volatility strategy at {t} - Pending implementation")
-            # stop added 
-
-    #    logging.info(f"Backtest completed. Final portfolio value: {self.broker.get_portfolio_value(info.get_prices(self.final_date,self.strategy_type))}")
-    #    df = self.broker.get_transaction_log()
-        # save to csv, use the backtest name 
-    #    df.to_csv(f"backtests/{self.backtest_name}.csv")
-
-        # store the backtest in the blockchain
-    #    self.broker.blockchain.add_block(self.backtest_name, df.to_string())
-    ##updated version
-    #def run_backtest(self):
-    #    logging.info(f"Running backtest from {self.initial_date} to {self.final_date}.")
-
-    #    if self.strategy_type == "vol":
-    #        logging.info(f"Retrieving implied volatility and option data for universe: {self.universe}")
-    #        init_ = self.initial_date.strftime('%Y-%m-%d')
-    #        final_ = self.final_date.strftime('%Y-%m-%d')
-    #        df = pd.concat(
-    #            [
-    #                get_index_data_vol(
-    #                    index,
-    #                   init_,
-    #                    final_,
-    #                    1,
-    #                    base_url=self.ngrok_url  # Pass the dynamic ngrok URL
-    #                ) for index in self.universe
-    #            ],
-    #            ignore_index=True
-    #        )
-    #    else:
-    #        logging.info(f"Retrieving price data for universe")
-    #        init_ = self.initial_date.strftime('%Y-%m-%d')
-    #        final_ = self.final_date.strftime('%Y-%m-%d')
-    #        df = get_stocks_data(self.universe, init_, final_)
-
-    #    data_module = DataModule(df)
-
-    #    info = self.information_class(
-    #        s=self.s,
-    #        data_module=data_module,
-    #        time_column=self.time_column,
-    #        company_column=self.company_column,
-    #        adj_close_column=self.adj_close_column,
-    #        indices=self.index_universe,
-    #        strategy_type=self.strategy_type,
-    #        percentage_spot=1.0  # Adjust as necessary
-    #    )
-
-    #    for t in pd.date_range(start=self.initial_date, end=self.final_date, freq='D'):
-    #        if self.strategy_type == "cash":
-    #            if self.risk_model is not None:
-    #                portfolio = info.compute_portfolio(t, info.compute_information(t))
-    #                prices = info.get_prices(t, self.strategy_type)
-    #                self.risk_model.trigger_stop_loss(t, portfolio, prices, self.broker)
-
-    #            if self.rebalance_flag().time_to_rebalance(t):
-    #                logging.info("-----------------------------------")
-    #                logging.info(f"Rebalancing portfolio at {t}")
-    #                information_set = info.compute_information(t)
-    #                portfolio = info.compute_portfolio(t, information_set)
-    #                prices = info.get_prices(t, self.strategy_type)
-    #                self.broker.execute_portfolio(portfolio, prices, t, self.strategy_type)
-    #        elif self.strategy_type == "vol":
-    #            if self.rebalance_flag().time_to_rebalance(t):
-    #                logging.info("-----------------------------------")
-    #                logging.info(f"Rebalancing volatility strategy at {t}")
-    #                information_set = info.compute_information(t, base_url=self.ngrok_url)
-    #                portfolio = info.compute_portfolio(t, information_set)
-    #                prices = info.get_prices(t, self.strategy_type)
-    #                self.broker.execute_portfolio(portfolio, prices, t, self.strategy_type)
-
-    #    logging.info(f"Backtest completed. Final portfolio value: {self.broker.get_portfolio_value(info.get_prices(self.final_date, self.strategy_type))}")
-    #    df = self.broker.get_transaction_log()
-    #    df.to_csv(f"backtests/{self.backtest_name}.csv")
-    #    self.broker.blockchain.add_block(self.backtest_name, df.to_string())
     ###third version: 
     def run_backtest(self):
         logging.info(f"Running backtest from {self.initial_date} to {self.final_date}.")
@@ -754,7 +696,6 @@ class Backtest:
                 logging.info("-----------------------------------")
                 logging.info(f"Rebalancing portfolio at {t}")
                 
-                logging.info(f"infooormation {type(info).__name__}")
                 information_set = info.compute_information(t,base_url=self.ngrok_url)
                 portfolio = info.compute_portfolio(t, information_set)
                 prices = info.get_prices(t, self.strategy_type,str(type(info).__name__))
@@ -762,12 +703,15 @@ class Backtest:
 
             
         # Final portfolio value
-        logging.info(f"Backtest completed. Final portfolio value: {self.broker.get_portfolio_value(info.get_prices(self.final_date, self.strategy_type,str(type(info).__name__)),self.strategy_type)}")
+        Portfolio_value= self.broker.get_portfolio_value(info.get_prices(self.final_date, self.strategy_type,str(type(info).__name__)),self.strategy_type)
+        logging.info(f"Backtest completed. Final portfolio value: {Portfolio_value}")
         df = self.broker.get_transaction_log()
-        logging.info(f"Final P&L: {self.broker.get_portfolio_value(info.get_prices(self.final_date, self.strategy_type,str(type(info).__name__)),self.strategy_type)- self.initial_cash}")
+        logging.info(f"Final P&L: {Portfolio_value- self.initial_cash}")
+        print("self cash initial", self.initial_cash)
         # Save the transaction log
         df.to_csv(f"backtests/{self.backtest_name}.csv")
 
         # Store the backtest in the blockchain
         self.broker.blockchain.add_block(self.backtest_name, df.to_string())
+        print("self.backtest_name",self.backtest_name)
         logging.info("Backtest results stored in blockchain.")

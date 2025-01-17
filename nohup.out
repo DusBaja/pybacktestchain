@@ -1,0 +1,21 @@
+python: can't open file '/Users/dusicabajalica/Desktop/M2/Courses/Python/pybacktestchain/pybacktestchain/app.py': [Errno 2] No such file or directory
+ * Serving Flask app "app" (lazy loading)
+ * Environment: production
+   WARNING: This is a development server. Do not use it in a production deployment.
+   Use a production WSGI server instead.
+ * Debug mode: off
+ * Running on all addresses.
+   WARNING: This is a development server. Do not use it in a production deployment.
+ * Running on http://192.168.1.64:5000/ (Press CTRL+C to quit)
+127.0.0.1 - - [16/Jan/2025 22:58:08] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Jan/2025 22:58:13] "GET /api/data?date=2025-01-17&index=Euro%20Stoxx%2050 HTTP/1.1" 404 -
+127.0.0.1 - - [16/Jan/2025 22:58:19] "GET /api/data?date=2025-01-14&index=Euro%20Stoxx%2050 HTTP/1.1" 200 -
+127.0.0.1 - - [16/Jan/2025 23:09:36] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Jan/2025 23:29:34] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Jan/2025 23:29:34] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [16/Jan/2025 23:29:40] "GET /api/data?date=2025-01-14&index=Euro%20Stoxx%2050 HTTP/1.1" 200 -
+127.0.0.1 - - [16/Jan/2025 23:29:42] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Jan/2025 23:29:42] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Jan/2025 23:29:44] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Jan/2025 23:29:44] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Jan/2025 23:29:45] "GET /favicon.ico HTTP/1.1" 404 -

@@ -244,7 +244,7 @@ def get_index_data_vol(ticker,start_date,end_date, percentage_spot=1, base_url=N
             logging.warning(f"No volatility surface data found for date: {date_str}")
             df.loc[df['Date'] == date, 'Percentage Spot selected vol for the close'] = np.nan
 
-        logging.info(f"Columns from the vol surface for {date_str}: {vol_surface_df}")
+        
         
     return df
 
@@ -296,7 +296,7 @@ def get_index_data_vols(tickers,start_date,end_date, percentage_spot=1, base_url
                     logging.warning(f"No volatility surface data found for date: {date_str}")
                     df.loc[df['Date'] == date, 'Percentage Spot selected vol for the close'] = np.nan
 
-                logging.info(f"Columns from the vol surface for {date_str}: {vol_surface_df}")
+                
             #print("Our data",df)
             if not df.empty:
                 dfs.append(df)
@@ -617,22 +617,6 @@ class Momentum(Information):
             # Update the position
             self.previous_best_performer = best_performer
 
-            # Get the spot price and implied volatility
-            #spot_price = information_set["spot_prices"].get(best_performer, 0)
-            #implied_vol = information_set["implied_vols"].get(best_performer, None)
-
-            #strike_price = spot_price * 1.05  # Going long 105% call option for the best performer
-            #time_to_expiry = 21 / 365  # 1 month to expiry
-            #risk_free_rate = 0.0315  # Assuming 3.15% annualized rate
-
-            #if implied_vol is None or spot_price <= 0:
-            #    logging.warning("Invalid spot price or implied volatility. Returning empty portfolio.")
-            #    return {company: 0 for company in companies}
-            
-            #call_option_price = Information.black_scholes(
-            #    spot_price, strike_price, time_to_expiry, risk_free_rate, implied_vol, option_type='call'
-            #)
-
             # Allocate 100% to the best performer
             portfolio = {company: 0 for company in companies}
             portfolio[best_performer] = 1
@@ -736,8 +720,6 @@ class Momentum(Information):
             print("information set in compute_information for vol strat: ",information_set)
             return information_set
 
-    
-####To correct later:
 class ShortSkew(Information):
     previous_best_performer: str = None  # Tracks the currently shorted index
     previous_position: dict = None  # Tracks the previous portfolio allocation
@@ -773,24 +755,6 @@ class ShortSkew(Information):
                 return self.previous_position
         #update the position
         self.previous_best_performer = best_performer
-
-        # Get spot price and implied volatility for the best index
-        #spot_price = information_set['spot_prices'][best_index]
-        #implied_vol = information_set['implied_vols'][best_index]
-
-        # Define option parameters
-        #strike_price = spot_price * 0.9  # 90% put option
-        #time_to_expiry = 21 / 365  # 1 month to expiry
-        #risk_free_rate = 0.0315  # Assuming 3.15% annualized rate
-
-        #if implied_vol is None or spot_price <= 0:
-        #    raise ValueError("Invalid spot price or implied volatility for the selected index.")
-
-        # Compute the put option price using Black-Scholes
-        #put_option_price = Information.black_scholes(
-        #    spot_price, strike_price, time_to_expiry, risk_free_rate, implied_vol, option_type='put'
-        #)
-        #print("The price of our put option is :",put_option_price)
 
         # Short 100% on the best performer 
         portfolio = {company: 0 for company in companies}

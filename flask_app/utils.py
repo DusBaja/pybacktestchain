@@ -11,6 +11,7 @@ def start_flask_app(flask_app_path):
     :return: Process object for the Flask app.
     """
     try:
+        
         flask_process = subprocess.Popen(
             ['python', flask_app_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
@@ -21,6 +22,7 @@ def start_flask_app(flask_app_path):
         return None
 #To access our dynamic link for our vol surface (changing everytime because the free version):
 
+#quit us one day before the end of the project !! Needed a new account 
 def start_ngrok():
     """Start ngrok and retrieve the public URL dynamically from the code we run on our server."""
     # Start ngrok process in the background
