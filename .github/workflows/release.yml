@@ -10,28 +10,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
+      
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Set up Node.js
-        - name: Set up Node.js
-          uses: actions/setup-node@v3
-          with:
-            node-version: 18
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
 
-      # Step 3: Install npm dependencies
+      
       - name: Install npm dependencies
         run: npm install
 
-      # Step 4: Install Python dependencies
+      
       - name: Install Python dependencies
         run: |
           python -m venv venv
           source venv/bin/activate
           pip install -r requirements.txt
 
-      # Step 5: Run Semantic Release
+      
       - name: Run Semantic Release
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
