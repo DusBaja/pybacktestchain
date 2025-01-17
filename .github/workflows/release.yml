@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - final-project
+  workflow_dispatch: 
 
 jobs:
   release:
