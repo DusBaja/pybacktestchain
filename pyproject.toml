@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pybacktestchain_vol_cash"
-version = "0.0.1"
+version = "0.0.3"
 description = "Store your backtests in a Blockchain"
 authors = ["Juan F. Imbet", "Dusica Bajalica"]
 license = "MIT"

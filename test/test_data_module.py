@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 import pandas as pd
 from datetime import datetime, timedelta
-from src.pybacktestchain.data_module import *
+from src.pybacktestchain_vol_cash.data_module import *
 from flask_app.utils import start_flask_app, start_ngrok
 
 # Start Flask app and ngrok for obtaining the URL

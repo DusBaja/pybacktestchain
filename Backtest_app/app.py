@@ -7,9 +7,9 @@ import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
 from datetime import datetime
-from src.pybacktestchain.data_module import FirstTwoMoments, ShortSkew, Momentum
-from src.pybacktestchain.broker import Backtest, StopLoss
-from src.pybacktestchain.blockchain import load_blockchain
+from src.pybacktestchain_vol_cash.data_module import FirstTwoMoments, ShortSkew, Momentum
+from src.pybacktestchain_vol_cash.broker import Backtest, StopLoss
+from src.pybacktestchain_vol_cash.blockchain import load_blockchain
 import dash_bootstrap_components as dbc
 
 # Initialize Dash app with a Bootstrap theme
