@@ -1,10 +1,16 @@
 [tool.poetry]
 name = "pybacktestchain_vol_cash"
-version = "0.0.5"
+version = "0.0.6"
 description = "Store your backtests in a Blockchain"
 authors = ["Juan F. Imbet", "Dusica Bajalica"]
 license = "MIT"
 readme = "README.md"
+
+packages = [
+    { include = "pybacktestchain_vol_cash", from = "src" },
+    { include = "Backtest_app"},
+    { include = "flask_app"}
+]
 
 [tool.poetry.dependencies]
 python = "^3.10"
