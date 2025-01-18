@@ -35,7 +35,7 @@ class TestBroker(unittest.TestCase):
         self.broker.buy("AAPL", 100, 150.0, self.date, "Shares", "cash")
         prices = {"AAPL": 120.0}  # Price drop
         stop_loss = StopLoss(threshold=0.1)
-        stop_loss.trigger_stop_loss(self.date, {}, prices, "Shares", self.broker, "cash")
+        stop_loss.trigger_stop_loss(self.date, {}, prices, self.broker, "cash")
         self.assertNotIn("AAPL", self.broker.positions)
 
 
