@@ -1,6 +1,6 @@
 import pandas as pd
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass,field
 from datetime import datetime
 import os 
 import pickle
@@ -709,7 +709,8 @@ class Backtest:
     initial_cash: int = 1000000  # Initial cash in the portfolio
     name_blockchain: str = 'backtest'
     verbose: bool = True
-    broker: Broker = Broker(cash=initial_cash, verbose=verbose)
+    #broker: Broker = Broker(cash=initial_cash, verbose=verbose)
+    broker: Broker = field(default_factory=lambda: Broker(cash=1000000, verbose=False))
     PnL: float =0.0
 
 
