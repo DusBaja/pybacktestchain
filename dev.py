@@ -1,8 +1,8 @@
 #%%
 
-from src.pybacktestchain_vol_cash.data_module import FirstTwoMoments,ShortSkew,Momentum
-from src.pybacktestchain_vol_cash.broker import Backtest, StopLoss
-from src.pybacktestchain_vol_cash.blockchain import load_blockchain
+from pybacktestchain_vol_cash.data_module import FirstTwoMoments,ShortSkew,Momentum
+from pybacktestchain_vol_cash.broker import Backtest, StopLoss
+from pybacktestchain_vol_cash.blockchain import load_blockchain
 from datetime import datetime
 
 
