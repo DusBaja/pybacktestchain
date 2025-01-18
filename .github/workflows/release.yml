@@ -39,13 +39,25 @@ jobs:
           pip install poetry
           poetry install
       
-      #- name: Install ngrok
-      ##  run: |
-      ##    sudo apt-get update
-      ##    sudo apt-get install -y wget unzip
-      ##    wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.zip
-      #    unzip ngrok-v3-stable-linux-amd64.zip
-      #    sudo mv ngrok /usr/local/bin/
+      - name: Install ngrok
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
+          wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.zip
+          unzip ngrok-v3-stable-linux-amd64.zip
+          sudo mv ngrok /usr/local/bin/
+      
+      - name: Verify ngrok installation
+        run: ngrok --version
+
+      - name: Start Flask and ngrok
+        run: |
+          source venv/bin/activate
+          nohup python flask_app/app.py &
+          sleep 5
+          ngrok http 5000 > ngrok.log 2>&1 &
+          sleep 5
+          curl http://localhost:4040/api/tunnels
 
 
       #tests:
