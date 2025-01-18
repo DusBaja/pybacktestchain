@@ -35,15 +35,16 @@ jobs:
           pip install --upgrade pip
           pip install poetry
           poetry install
-
+      #tests:
+      - name: Run tests
+        run: |
+          source venv/bin/activate
+          poetry run pytest --verbose
 
       # Step 5: Run Semantic Release
       - name: Run Semantic Release
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: npx semantic-release
+     
 
-      - name: Run tests
-        run: |
-          poetry install
-          poetry run pytest --verbose
