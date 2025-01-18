@@ -65,7 +65,7 @@ backtest.run_backtest()
 
 # Load and validate the blockchain
 block_chain = load_blockchain(name_blockchain)
-#print(str(block_chain))
+print(str(block_chain))
 
 # Check if the blockchain is valid
 print("Is blockchain valid?", block_chain.is_valid())
